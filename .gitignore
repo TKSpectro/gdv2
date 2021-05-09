@@ -30,3 +30,10 @@
 *.exe
 *.out
 *.app
+
+/.vs
+/docs
+/pdf
+*/build
+*/Debug
+*/.vs
