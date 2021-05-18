@@ -8,19 +8,24 @@ cbuffer VSBuffer : register(b0)         // Register the constant buffer on slot 
 	float4x4 g_WorldMatrix;
 };
 
+/*cbuffer PSBuffer : register(b1)         // Register the constant buffer on slot 0
+{
+	float4 g_ColorArray;
+};*/
+
 // -----------------------------------------------------------------------------
 // Define input and output data of the vertex shader.
 // -----------------------------------------------------------------------------
 struct VSInput
 {
 	float3 m_Position : POSITION;
-	float4 m_Color : TEXCOORD4;
+	float4 m_Color : COLOR;
 };
 
 struct PSInput
 {
 	float4 m_Position : SV_POSITION;
-	float4 m_Color : TEXCOORD4
+	float4 m_Color : TEXCOORD0;
 };
 
 // -----------------------------------------------------------------------------
@@ -41,6 +46,7 @@ PSInput VSShader(VSInput _Input)
 	// Get the clip space position.
 	// -------------------------------------------------------------------------------
 	Output.m_Position = mul(WSPosition, g_ViewProjectionMatrix);
+	Output.m_Color = _Input.m_Color;
 
 	return Output;
 }
@@ -50,7 +56,7 @@ PSInput VSShader(VSInput _Input)
 // -----------------------------------------------------------------------------
 float4 PSShader(PSInput _Input) : SV_Target
 {
-	return float4(1.0f, 0.0f, 0.0f, 1.0f);
+	return _Input.m_Color;
 }
 
 

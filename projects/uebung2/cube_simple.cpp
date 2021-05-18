@@ -38,6 +38,11 @@ struct SVertexBuffer
 	float m_WorldMatrix[16];                // The world matrix to transform a mesh from local space to world space.
 };
 
+struct SPixelBuffer
+{
+	float m_ColorArray[4];       // The colors of the current vertex which [0]R [1]G [2]B [3]A
+};
+
 // -----------------------------------------------------------------------------
 
 class CApplication : public IApplication
@@ -53,6 +58,7 @@ private:
 	float   m_ViewMatrix[16];           // The view matrix to transform a mesh from world space into view space.
 	float   m_ProjectionMatrix[16];     // The projection matrix to transform a mesh from view space into clip space.
 	BHandle m_pVertexConstantBuffer;    // A pointer to a YoshiX constant buffer, which defines global data for a vertex shader.
+	//BHandle m_pPixelConstantBuffer;    // A pointer to a YoshiX constant buffer, which defines global data for a pixel shader.
 	BHandle m_pVertexShader;            // A pointer to a YoshiX vertex shader, which processes each single vertex of the mesh.
 	BHandle m_pPixelShader;             // A pointer to a YoshiX pixel shader, which computes the color of each pixel visible of the mesh on the screen.
 	BHandle m_pMaterial;                // A pointer to a YoshiX material, spawning the surface of the mesh.
@@ -82,6 +88,7 @@ private:
 CApplication::CApplication()
 	: m_FieldOfViewY(60.0f)        // Set the vertical view angle of the camera to 60 degrees.
 	, m_pVertexConstantBuffer(nullptr)
+	//, m_pPixelConstantBuffer(nullptr)
 	, m_pVertexShader(nullptr)
 	, m_pPixelShader(nullptr)
 	, m_pMaterial(nullptr)
@@ -107,6 +114,7 @@ bool CApplication::InternOnCreateConstantBuffers()
 	// when creating the material.
 	// -----------------------------------------------------------------------------
 	CreateConstantBuffer(sizeof(SVertexBuffer), &m_pVertexConstantBuffer);
+	//CreateConstantBuffer(sizeof(SPixelBuffer), &m_pVertexConstantBuffer);
 
 	return true;
 }
@@ -119,6 +127,7 @@ bool CApplication::InternOnReleaseConstantBuffers()
 	// Important to release the buffer again when the application is shut down.
 	// -----------------------------------------------------------------------------
 	ReleaseConstantBuffer(m_pVertexConstantBuffer);
+	//ReleaseConstantBuffer(m_pPixelConstantBuffer);
 
 	return true;
 }
@@ -130,8 +139,8 @@ bool CApplication::InternOnCreateShader()
 	// -----------------------------------------------------------------------------
 	// Load and compile the shader programs.
 	// -----------------------------------------------------------------------------
-	CreateVertexShader("simple.fx", "VSShader", &m_pVertexShader);
-	CreatePixelShader("simple.fx", "PSShader", &m_pPixelShader);
+	CreateVertexShader("..\\data\\shader\\simple2.fx", "VSShader", &m_pVertexShader);
+	CreatePixelShader("..\\data\\shader\\simple2.fx", "PSShader", &m_pPixelShader);
 
 	return true;
 }
@@ -164,9 +173,10 @@ bool CApplication::InternOnCreateMaterials()
 	MaterialInfo.m_NumberOfVertexConstantBuffers = 1;                           // We need one vertex constant buffer to pass world matrix and view projection matrix to the vertex shader.
 	MaterialInfo.m_pVertexConstantBuffers[0] = m_pVertexConstantBuffer;     // Pass the handle to the created vertex constant buffer.
 	MaterialInfo.m_NumberOfPixelConstantBuffers = 0;                           // We do not need any global data in the pixel shader.
+	//MaterialInfo.m_pPixelConstantBuffers[0] = m_pPixelConstantBuffer;     // Pass the handle to the created vertex constant buffer.
 	MaterialInfo.m_pVertexShader = m_pVertexShader;             // The handle to the vertex shader.
 	MaterialInfo.m_pPixelShader = m_pPixelShader;              // The handle to the pixel shader.
-	MaterialInfo.m_NumberOfInputElements = 1;                           // The vertex shader requests the position as only argument.
+	MaterialInfo.m_NumberOfInputElements = 2;                           // The vertex shader requests the position as only argument.
 	MaterialInfo.m_InputElements[0].m_pName = "POSITION";                  // The semantic name of the argument, which matches exactly the identifier in the 'VSInput' struct.
 	MaterialInfo.m_InputElements[0].m_Type = SInputElement::Float3;       // The position is a 3D vector with floating points.
 	MaterialInfo.m_InputElements[1].m_pName = "COLOR";					  // The semantic name of the argument, which matches exactly the identifier in the 'VSInput' struct.
@@ -216,7 +226,6 @@ bool CApplication::InternOnCreateMeshes()
 	// Scheitelpunkte
 	float QuadVertices[][7] =
 	{
-
 		{ -HalfEdgeLength, -HalfEdgeLength, -HalfEdgeLength, 0.0f, 0.0f, 1.0f, 1.0f},
 		{  HalfEdgeLength, -HalfEdgeLength, -HalfEdgeLength, 0.0f, 1.0f, 0.0f, 1.0f},
 		{  HalfEdgeLength,  HalfEdgeLength, -HalfEdgeLength, 1.0f, 0.0f, 0.0f, 1.0f},
@@ -273,14 +282,6 @@ bool CApplication::InternOnCreateMeshes()
 	// the number of triangles.
 	// -----------------------------------------------------------------------------
 	SMeshInfo MeshInfo;
-
-	/*
-	MeshInfo.m_pVertices = &TriangleVertices[0][0];      // Pointer to the first float of the first vertex.
-	MeshInfo.m_NumberOfVertices = 3;                            // The number of vertices.
-	MeshInfo.m_pIndices = &TriangleIndices[0][0];       // Pointer to the first index.
-	MeshInfo.m_NumberOfIndices = 3;                            // The number of indices (has to be dividable by 3).
-	MeshInfo.m_pMaterial = m_pMaterial;                  // A handle to the material covering the mesh.
-	*/
 
 	MeshInfo.m_pVertices = &QuadVertices[0][0];      // Pointer to the first float of the first vertex.
 	MeshInfo.m_NumberOfVertices = 8;                            // The number of vertices.
@@ -353,6 +354,13 @@ bool CApplication::InternOnFrame()
 	// to be done before drawing the mesh, though not necessarily in this method.
 	// -----------------------------------------------------------------------------
 	SVertexBuffer VertexBuffer;
+	SPixelBuffer PixelBuffer;
+
+	PixelBuffer.m_ColorArray[0] = 1.0f;
+	PixelBuffer.m_ColorArray[1] = 1.0f;
+	PixelBuffer.m_ColorArray[2] = 1.0f;
+	PixelBuffer.m_ColorArray[3] = 1.0f;
+
 	float rotationMatrix[16];
 	float translationMatrix[16];
 
@@ -385,6 +393,7 @@ bool CApplication::InternOnFrame()
 	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
 
 	UploadConstantBuffer(&VertexBuffer, m_pVertexConstantBuffer);
+	//UploadConstantBuffer(&PixelBuffer, m_pPixelConstantBuffer);
 
 	// -----------------------------------------------------------------------------
 	// Draw the mesh. This will activate the shader, constant buffers, and textures

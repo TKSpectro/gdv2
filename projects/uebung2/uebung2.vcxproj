@@ -13,13 +13,10 @@
   <ItemGroup>
     <ClCompile Include="cube_simple.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="simpleCustom.fx" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>example</RootNamespace>
+    <RootNamespace>uebung2</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

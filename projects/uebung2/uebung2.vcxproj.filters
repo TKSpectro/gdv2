@@ -3,7 +3,4 @@
   <ItemGroup>
     <ClCompile Include="cube_simple.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="simpleCustom.fx" />
-  </ItemGroup>
 </Project>
