@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.30709.132
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example", "example\example.vcxproj", "{2226DB5F-4E89-48C0-8A1F-6F90641D0437}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uebung2", "uebung2\uebung2.vcxproj", "{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,12 @@ Global
 		{2226DB5F-4E89-48C0-8A1F-6F90641D0437}.Release|Win32.ActiveCfg = Release|Win32
 		{2226DB5F-4E89-48C0-8A1F-6F90641D0437}.Release|Win32.Build.0 = Release|Win32
 		{2226DB5F-4E89-48C0-8A1F-6F90641D0437}.Release|x64.ActiveCfg = Release|Win32
+		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Debug|Win32.Build.0 = Debug|Win32
+		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Debug|x64.ActiveCfg = Debug|Win32
+		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Release|Win32.ActiveCfg = Release|Win32
+		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Release|Win32.Build.0 = Release|Win32
+		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

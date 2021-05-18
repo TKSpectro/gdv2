@@ -13,8 +13,11 @@
   <ItemGroup>
     <ClCompile Include="cube_simple.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="simpleCustom.fx" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2226DB5F-4E89-48C0-8A1F-6F90641D0437}</ProjectGuid>
+    <ProjectGuid>{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>example</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>

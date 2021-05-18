@@ -130,8 +130,8 @@ bool CApplication::InternOnCreateShader()
 	// -----------------------------------------------------------------------------
 	// Load and compile the shader programs.
 	// -----------------------------------------------------------------------------
-	CreateVertexShader("..\\data\\shader\\simple.fx", "VSShader", &m_pVertexShader);
-	CreatePixelShader("..\\data\\shader\\simple.fx", "PSShader", &m_pPixelShader);
+	CreateVertexShader("simple.fx", "VSShader", &m_pVertexShader);
+	CreatePixelShader("simple.fx", "PSShader", &m_pPixelShader);
 
 	return true;
 }
@@ -169,6 +169,8 @@ bool CApplication::InternOnCreateMaterials()
 	MaterialInfo.m_NumberOfInputElements = 1;                           // The vertex shader requests the position as only argument.
 	MaterialInfo.m_InputElements[0].m_pName = "POSITION";                  // The semantic name of the argument, which matches exactly the identifier in the 'VSInput' struct.
 	MaterialInfo.m_InputElements[0].m_Type = SInputElement::Float3;       // The position is a 3D vector with floating points.
+	MaterialInfo.m_InputElements[1].m_pName = "COLOR";					  // The semantic name of the argument, which matches exactly the identifier in the 'VSInput' struct.
+	MaterialInfo.m_InputElements[1].m_Type = SInputElement::Float4;       // The position is a 3D vector with floating points.
 
 	CreateMaterial(MaterialInfo, &m_pMaterial);
 
@@ -212,18 +214,18 @@ bool CApplication::InternOnCreateMeshes()
 	const float HalfEdgeLength = 2.0f;
 
 	// Scheitelpunkte
-	float QuadVertices[][3] =
+	float QuadVertices[][7] =
 	{
 
-		{ -HalfEdgeLength, -HalfEdgeLength, -HalfEdgeLength, },
-		{  HalfEdgeLength, -HalfEdgeLength, -HalfEdgeLength, },
-		{  HalfEdgeLength,  HalfEdgeLength, -HalfEdgeLength, },
-		{ -HalfEdgeLength,  HalfEdgeLength, -HalfEdgeLength, },
+		{ -HalfEdgeLength, -HalfEdgeLength, -HalfEdgeLength, 0.0f, 0.0f, 1.0f, 1.0f},
+		{  HalfEdgeLength, -HalfEdgeLength, -HalfEdgeLength, 0.0f, 1.0f, 0.0f, 1.0f},
+		{  HalfEdgeLength,  HalfEdgeLength, -HalfEdgeLength, 1.0f, 0.0f, 0.0f, 1.0f},
+		{ -HalfEdgeLength,  HalfEdgeLength, -HalfEdgeLength, 0.0f, 0.0f, 1.0f, 1.0f},
 
-		{ -HalfEdgeLength, -HalfEdgeLength,  HalfEdgeLength, },
-		{  HalfEdgeLength, -HalfEdgeLength,  HalfEdgeLength, },
-		{  HalfEdgeLength,  HalfEdgeLength,  HalfEdgeLength, },
-		{ -HalfEdgeLength,  HalfEdgeLength,  HalfEdgeLength, },
+		{ -HalfEdgeLength, -HalfEdgeLength,  HalfEdgeLength, 1.0f, 0.0f, 1.0f, 1.0f},
+		{  HalfEdgeLength, -HalfEdgeLength,  HalfEdgeLength, 0.0f, 1.0f, 1.0f, 1.0f},
+		{  HalfEdgeLength,  HalfEdgeLength,  HalfEdgeLength, 0.0f, 0.0f, 1.0f, 1.0f},
+		{ -HalfEdgeLength,  HalfEdgeLength,  HalfEdgeLength, 1.0f, 0.0f, 1.0f, 1.0f},
 	};
 
 	// -----------------------------------------------------------------------------
