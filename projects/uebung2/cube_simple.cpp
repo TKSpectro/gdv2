@@ -40,7 +40,7 @@ struct SVertexBuffer
 
 struct SPixelBuffer
 {
-	float m_ColorArray[4];       // The colors of the current vertex which [0]R [1]G [2]B [3]A
+	float m_Color[4];       // The colors of the current vertex which [0]R [1]G [2]B [3]A
 };
 
 // -----------------------------------------------------------------------------
@@ -58,7 +58,7 @@ private:
 	float   m_ViewMatrix[16];           // The view matrix to transform a mesh from world space into view space.
 	float   m_ProjectionMatrix[16];     // The projection matrix to transform a mesh from view space into clip space.
 	BHandle m_pVertexConstantBuffer;    // A pointer to a YoshiX constant buffer, which defines global data for a vertex shader.
-	//BHandle m_pPixelConstantBuffer;    // A pointer to a YoshiX constant buffer, which defines global data for a pixel shader.
+	BHandle m_pPixelConstantBuffer;    // A pointer to a YoshiX constant buffer, which defines global data for a pixel shader.
 	BHandle m_pVertexShader;            // A pointer to a YoshiX vertex shader, which processes each single vertex of the mesh.
 	BHandle m_pPixelShader;             // A pointer to a YoshiX pixel shader, which computes the color of each pixel visible of the mesh on the screen.
 	BHandle m_pMaterial;                // A pointer to a YoshiX material, spawning the surface of the mesh.
@@ -88,7 +88,7 @@ private:
 CApplication::CApplication()
 	: m_FieldOfViewY(60.0f)        // Set the vertical view angle of the camera to 60 degrees.
 	, m_pVertexConstantBuffer(nullptr)
-	//, m_pPixelConstantBuffer(nullptr)
+	, m_pPixelConstantBuffer(nullptr)
 	, m_pVertexShader(nullptr)
 	, m_pPixelShader(nullptr)
 	, m_pMaterial(nullptr)
@@ -114,7 +114,7 @@ bool CApplication::InternOnCreateConstantBuffers()
 	// when creating the material.
 	// -----------------------------------------------------------------------------
 	CreateConstantBuffer(sizeof(SVertexBuffer), &m_pVertexConstantBuffer);
-	//CreateConstantBuffer(sizeof(SPixelBuffer), &m_pVertexConstantBuffer);
+	CreateConstantBuffer(sizeof(SPixelBuffer), &m_pPixelConstantBuffer);
 
 	return true;
 }
@@ -127,7 +127,7 @@ bool CApplication::InternOnReleaseConstantBuffers()
 	// Important to release the buffer again when the application is shut down.
 	// -----------------------------------------------------------------------------
 	ReleaseConstantBuffer(m_pVertexConstantBuffer);
-	//ReleaseConstantBuffer(m_pPixelConstantBuffer);
+	ReleaseConstantBuffer(m_pPixelConstantBuffer);
 
 	return true;
 }
@@ -172,8 +172,8 @@ bool CApplication::InternOnCreateMaterials()
 	MaterialInfo.m_NumberOfTextures = 0;                           // The material does not need textures, because the pixel shader just returns a constant color.
 	MaterialInfo.m_NumberOfVertexConstantBuffers = 1;                           // We need one vertex constant buffer to pass world matrix and view projection matrix to the vertex shader.
 	MaterialInfo.m_pVertexConstantBuffers[0] = m_pVertexConstantBuffer;     // Pass the handle to the created vertex constant buffer.
-	MaterialInfo.m_NumberOfPixelConstantBuffers = 0;                           // We do not need any global data in the pixel shader.
-	//MaterialInfo.m_pPixelConstantBuffers[0] = m_pPixelConstantBuffer;     // Pass the handle to the created vertex constant buffer.
+	MaterialInfo.m_NumberOfPixelConstantBuffers = 1;                           // We do not need any global data in the pixel shader.
+	MaterialInfo.m_pPixelConstantBuffers[0] = m_pPixelConstantBuffer;     // Pass the handle to the created pixel constant buffer.
 	MaterialInfo.m_pVertexShader = m_pVertexShader;             // The handle to the vertex shader.
 	MaterialInfo.m_pPixelShader = m_pPixelShader;              // The handle to the pixel shader.
 	MaterialInfo.m_NumberOfInputElements = 2;                           // The vertex shader requests the position as only argument.
@@ -356,10 +356,10 @@ bool CApplication::InternOnFrame()
 	SVertexBuffer VertexBuffer;
 	SPixelBuffer PixelBuffer;
 
-	PixelBuffer.m_ColorArray[0] = 1.0f;
-	PixelBuffer.m_ColorArray[1] = 1.0f;
-	PixelBuffer.m_ColorArray[2] = 1.0f;
-	PixelBuffer.m_ColorArray[3] = 1.0f;
+	PixelBuffer.m_Color[0] = 1.0f;
+	PixelBuffer.m_Color[1] = 1.0f;
+	PixelBuffer.m_Color[2] = 1.0f;
+	PixelBuffer.m_Color[3] = 1.0f;
 
 	float rotationMatrix[16];
 	float translationMatrix[16];
@@ -393,7 +393,7 @@ bool CApplication::InternOnFrame()
 	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
 
 	UploadConstantBuffer(&VertexBuffer, m_pVertexConstantBuffer);
-	//UploadConstantBuffer(&PixelBuffer, m_pPixelConstantBuffer);
+	UploadConstantBuffer(&PixelBuffer, m_pPixelConstantBuffer);
 
 	// -----------------------------------------------------------------------------
 	// Draw the mesh. This will activate the shader, constant buffers, and textures

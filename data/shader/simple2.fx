@@ -2,16 +2,16 @@
 // -----------------------------------------------------------------------------
 // Define the constant buffers.
 // -----------------------------------------------------------------------------
-cbuffer VSBuffer : register(b0)         // Register the constant buffer on slot 0
+cbuffer VSBuffer : register(b0) // Register the constant buffer on slot 0
 {
 	float4x4 g_ViewProjectionMatrix;
 	float4x4 g_WorldMatrix;
 };
 
-/*cbuffer PSBuffer : register(b1)         // Register the constant buffer on slot 0
+cbuffer PSBuffer : register(b0) // Register the constant buffer on slot 0
 {
-	float4 g_ColorArray;
-};*/
+	float4 g_Color;
+};
 
 // -----------------------------------------------------------------------------
 // Define input and output data of the vertex shader.
@@ -35,7 +35,7 @@ PSInput VSShader(VSInput _Input)
 {
 	float4 WSPosition;
 
-	PSInput Output = (PSInput)0;
+	PSInput Output = (PSInput) 0;
 
 	// -------------------------------------------------------------------------------
 	// Get the world space position.
@@ -46,7 +46,6 @@ PSInput VSShader(VSInput _Input)
 	// Get the clip space position.
 	// -------------------------------------------------------------------------------
 	Output.m_Position = mul(WSPosition, g_ViewProjectionMatrix);
-	Output.m_Color = _Input.m_Color;
 
 	return Output;
 }
@@ -56,7 +55,7 @@ PSInput VSShader(VSInput _Input)
 // -----------------------------------------------------------------------------
 float4 PSShader(PSInput _Input) : SV_Target
 {
-	return _Input.m_Color;
+	return g_Color;
 }
 
 
