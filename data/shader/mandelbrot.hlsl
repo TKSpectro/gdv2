@@ -1,70 +1,71 @@
+//————————————————————————————–
+// Constant Buffer Variables
+//————————————————————————————–
 
-cbuffer VSConstants : register(b0)
-{
-    float4x4 g_WorldMatrix;
-    float4x4 g_ViewProjectionMatrix;
-    float3 g_WSLightPosition; // => float4
-    float3 g_WSViewPosition; // => float4
-};
 cbuffer PSConstants : register(b0)
 {
-    float3 g_AmbientIntensity; // Light Properties      => float4   
-    float3 g_DiffuseIntensity; // Light Properties      => float4
-    float3 g_SpecularIntensity; // Light Properties      => float4
-    float3 g_AmbientReflection; // Material Properties   => float4
-    float3 g_DiffuseReflection; // Material Properties   => float4
-    float3 g_SpecularReflection; // Material Properties   => float4
-    float g_SpecularExponent; // Material Properties   => float4
+    //int Iterations;
+    float2 Pan;
+    float Zoom;
+    float Aspect;
+    float3 Color;
+    float dummy1;
+    //int dummy2;
 };
 
-struct VSInput
+//————————————————————————————–
+// Input structures
+//————————————————————————————–
+struct VS_INPUT
 {
-    float3 m_OSPosition : OSPOSITION;
-    float3 m_OSNormal : OSNORMAL;
+    float4 C : POSITION;
+    float2 TEX : TEXCOORD0;
 };
 
-struct PSInput
+struct PS_INPUT
 {
-    m_CSPosition :
-    SV_POSITION;
-    m_WSNormal : TEXCOORD0;
-    m_WSLightDir :
-    TEXCOORD1;
-    m_WSViewDir : TEXCOORD2;
+    float4 C : SV_POSITION;
+    float2 TEX : TEXCOORD0;
 };
 
-PSInput VSPhongMain(VSInput _Input)
+//————————————————————————————–
+// Vertex Shader
+//————————————————————————————–
+PS_INPUT VSShader(VS_INPUT input)
 {
-    float4 WSPosition = mul(float4(_Input.m_OSPosition, 1.0f), g_WorldMatrix);
-    float4 CSPosition = mul(WSPosition, g_ViewProjectionMatrix);
+    PS_INPUT output = (PS_INPUT) 0;
+    output.C = input.C;
+    output.TEX = input.TEX;
 
-    float3 WSNormal = mul(_Input.m_OSNormal, (float3x3) g_WorldMatrix);
-
-    float3 WSLightDir = g_WSLightPosition - WSPosition;
-    float3 WSViewDir = g_WSViewPosition - WSPosition;
-
-    PSInput Result;
-
-    Result.m_CSPosition = CSPosition;
-    Result.m_WSNormal = WSNormal;
-    Result.m_WSLightDir = WSLightDir;
-    Result.m_WSViewDir = WSViewDir;
-
-    return Result;
+    return output;
 }
 
-float4 PSPhongMain(PSInput _Input) : SV_TARGET
+//————————————————————————————–
+// Pixel Shader
+//————————————————————————————–
+float4 PSShader(PS_INPUT input) : SV_Target
 {
-    float3 WSNormal = normalize(_Input.m_WSNormal);
-    float3 WSLightDir = normalize(_Input.m_WSLightDir);
-    float3 WSViewDir = normalize(_Input.m_WSViewDir);
-    float3 WSHalfDir = normalize(WSLightDir + WSViewDir);
+    float2 C = (input.TEX - 0.5) * Zoom * float2(1, Aspect) - Pan;
+    float2 v = C;
 
-    float3 Ambient = g_AmbientIntensity * g_AmbientReflection;
-    float3 Diffuse = g_DiffuseIntensity * g_DiffuseReflection * max(dot(m_WSNormal, WSLightDir), 0.0f);
-    float3 Specular = g_SpecularIntensity * g_SpecularReflection * pow(max(dot(m_WSNormal, WSHalfDir), 0.0f), g_SpecularExponent);
+    int iterations = 10;
+    int prevIteration = iterations;
+    int i = 0;
 
-    float3 Light = Ambient + Diffuse + Specular;
+    do
+    {
+        v = float2((v.x * v.x) - (v.y * v.y), v.x * v.y * 2) + C;
 
-    return float4(Light, 1.0f);
+        i++;
+
+        if ((prevIteration == iterations) && ((v.x * v.x) + (v.y * v.y)) > 4.0)
+        {
+            prevIteration = i + 1;
+        }
+    }
+    while (i < prevIteration);
+
+    float NIC = (float(i) - (log(log(sqrt((v.x * v.x) + (v.y * v.y)))) / log(2.0))) / float(iterations);
+
+    return float4(sin(NIC * Color.x), sin(NIC * Color.y), sin(NIC * Color.z), 1);
 }
