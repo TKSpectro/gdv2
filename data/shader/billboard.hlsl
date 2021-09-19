@@ -41,27 +41,21 @@ struct PSInput
 // -----------------------------------------------------------------------------
 PSInput VSShader(VSInput _Input)
 {
-    float4 WSPosition;
-    
-
-    // lower left
-    float3 ll = { -1.0f, -1.0f, 0.0f };
-    // lower right
-    float3 lr = { 1.0f, -1.0f, 0.0f };
-    // upper right
-    float3 ur = { 1.0f, 1.0f, 0.0f };
-    // upper left
-    float3 ul = { -1.0f, 1.0f, 0.0f };
+    // lower left , lower right, upper right, upper left
+    float3 ll = { -1.0f + g_PositionInWorldSpace.x, -1.0f + g_PositionInWorldSpace.y, 0.0f + g_PositionInWorldSpace.z };
+    float3 lr = { 1.0f + g_PositionInWorldSpace.x, -1.0f + g_PositionInWorldSpace.y, 0.0f + g_PositionInWorldSpace.z };
+    float3 ur = { 1.0f + g_PositionInWorldSpace.x, 1.0f + g_PositionInWorldSpace.y, 0.0f + g_PositionInWorldSpace.z };
+    float3 ul = { -1.0f + g_PositionInWorldSpace.x, 1.0f + g_PositionInWorldSpace.y, 0.0f + g_PositionInWorldSpace.z };
 
     // Nicht sicher ob das schon invertiert ist?
     float3 cameraDirection = normalize(g_CameraPos - g_CameraAt);
     
     // Kreuzprodukt -> von was?
-    float3 xBaseVector = { 0, 0, 0 };
+    float3 xBaseVector = { 0.0f, 0.0f, 0.0f };
     // Rotation nur um y-Achse
-    float3 yBaseVector = { 0, 1, 0 };
+    float3 yBaseVector = { 0.0f, 1.0f, 0.0f };
     // Entgegengesetzte Blickrichtung der Kamera und y = 0
-    float3 zBaseVector = { cameraDirection.x, 0, cameraDirection.z };
+    float3 zBaseVector = { cameraDirection.x, 0.0f, cameraDirection.z };
     
     float3x3 BaseVector =
     {
@@ -69,8 +63,9 @@ PSInput VSShader(VSInput _Input)
         normalize(yBaseVector),
         normalize(zBaseVector)
     };
+   
+    float4 WSPosition;
     
-
     PSInput Output = (PSInput) 0;
     
 	// -------------------------------------------------------------------------------
@@ -84,8 +79,7 @@ PSInput VSShader(VSInput _Input)
     Output.m_Position = mul(WSPosition, g_ViewProjectionMatrix);
     Output.m_TexCoord = _Input.m_TexCoord;
     
-    return
-Output;
+    return Output;
 }
 
 // -----------------------------------------------------------------------------
