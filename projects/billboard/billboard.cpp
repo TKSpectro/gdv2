@@ -207,7 +207,7 @@ bool CApplication::InternOnReleaseMaterials()
 
 bool CApplication::InternOnCreateTextures()
 {
-	CreateTexture("..\\data\\images\\leaf.dds", &m_pTreeTexture);
+	CreateTexture("..\\data\\images\\leaf2.dds", &m_pTreeTexture);
 
 	return true;
 }
