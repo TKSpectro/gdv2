@@ -13,6 +13,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssao", "ssao\ssao.vcxproj",
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shaders", "shaders", "{9D4498B2-5EC3-4EDE-A432-ACBC48449BF0}"
 	ProjectSection(SolutionItems) = preProject
+		..\data\shader\billboard.hlsl = ..\data\shader\billboard.hlsl
 		..\data\shader\bump_mapping.fx = ..\data\shader\bump_mapping.fx
 		..\data\shader\colored.fx = ..\data\shader\colored.fx
 		..\data\shader\mandelbrot.hlsl = ..\data\shader\mandelbrot.hlsl
@@ -36,6 +37,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "images", "images", "{52CA5D
 		..\data\images\wall_color_map.dds = ..\data\images\wall_color_map.dds
 		..\data\images\wall_normal_map.dds = ..\data\images\wall_normal_map.dds
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "billboard", "billboard\billboard.vcxproj", "{CE8D7252-26C5-47F1-A896-06CA768A0E40}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -69,6 +72,12 @@ Global
 		{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}.Release|Win32.ActiveCfg = Release|Win32
 		{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}.Release|Win32.Build.0 = Release|Win32
 		{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}.Release|x64.ActiveCfg = Release|Win32
+		{CE8D7252-26C5-47F1-A896-06CA768A0E40}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CE8D7252-26C5-47F1-A896-06CA768A0E40}.Debug|Win32.Build.0 = Debug|Win32
+		{CE8D7252-26C5-47F1-A896-06CA768A0E40}.Debug|x64.ActiveCfg = Debug|Win32
+		{CE8D7252-26C5-47F1-A896-06CA768A0E40}.Release|Win32.ActiveCfg = Release|Win32
+		{CE8D7252-26C5-47F1-A896-06CA768A0E40}.Release|Win32.Build.0 = Release|Win32
+		{CE8D7252-26C5-47F1-A896-06CA768A0E40}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

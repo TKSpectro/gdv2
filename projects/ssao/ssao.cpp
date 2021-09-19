@@ -1,6 +1,6 @@
 
 #include "yoshix.h"
-
+#include <cstdlib>
 #include <math.h>
 
 using namespace gfx;
@@ -56,7 +56,9 @@ private:
 	BHandle m_pVertexShader;            // A vertex shader to draw the textured cube.
 	BHandle m_pPixelShader;             // A pixel shader to draw the textured cube.
 	BHandle m_pMaterial;                // A material which uses the standard vertex and pixel shader to draw the cube.
-	BHandle m_pMesh;                    // The cube with standard material.
+	BHandle m_pMesh;   // The cube with standard material.
+
+	BHandle m_pNoiseMaterial;
 
 	BHandle m_pPostVertexShader;        // A vertex shader to project a rectangular mesh onto the frame buffer.
 	BHandle m_pPostPixelShader;         // A pixel shader to calculate the post effect.
@@ -105,6 +107,7 @@ CApplication::CApplication()
 	, m_pPixelShader(nullptr)
 	, m_pMaterial(nullptr)
 	, m_pMesh(nullptr)
+	, m_pNoiseMaterial(nullptr)
 {
 }
 
@@ -261,6 +264,29 @@ bool CApplication::InternOnCreateMaterials()
 
 	CreateMaterial(MaterialInfo, &m_pPostMaterial);
 
+	float noiseTextureFloats[192];
+	for(int i = 0; i < 64; i++)
+	{
+		int index = i * 3;
+		noiseTextureFloats[index] = fmod(rand(), (1.0f - -1.0f + 1) + -1.0f);
+		noiseTextureFloats[index + 1] = fmod(rand(), (1.0f - -1.0f + 1) + -1.0f);
+		noiseTextureFloats[index + 2] = 0.0f;
+	}
+
+	MaterialInfo.m_NumberOfTextures = 1;
+	MaterialInfo.m_pTextures[0] = noiseTextureFloats;
+	MaterialInfo.m_NumberOfVertexConstantBuffers = 1;
+	MaterialInfo.m_pVertexConstantBuffers[0] = m_pVertexConstantBuffer;
+	MaterialInfo.m_NumberOfPixelConstantBuffers = 1;
+	MaterialInfo.m_pPixelConstantBuffers[0] = m_pPixelConstantBuffer;
+	MaterialInfo.m_pVertexShader = m_pPostVertexShader;
+	MaterialInfo.m_pPixelShader = m_pPostPixelShader;
+	MaterialInfo.m_NumberOfInputElements = 1;
+	MaterialInfo.m_InputElements[0].m_pName = "NOISETEXTURE";
+	MaterialInfo.m_InputElements[0].m_Type = SInputElement::Float2;
+
+	CreateMaterial(MaterialInfo, &m_pNoiseMaterial);
+
 	return true;
 }
 
@@ -271,6 +297,7 @@ bool CApplication::InternOnReleaseMaterials()
 	ReleaseMaterial(m_pGBufferMaterial);
 	ReleaseMaterial(m_pMaterial);
 	ReleaseMaterial(m_pPostMaterial);
+	ReleaseMaterial(m_pNoiseMaterial);
 
 	return true;
 }
@@ -456,6 +483,16 @@ bool CApplication::InternOnFrame()
 	// Upload the matrices to the vertex shader.
 	// -----------------------------------------------------------------------------
 	SVertexBuffer VertexBuffer;
+
+	float noiseTextureFloats[192];
+	for(int i = 0; i < 64; i++)
+	{
+		int index = i * 3;
+		noiseTextureFloats[index] = fmod(rand(), (1.0f - -1.0f + 1) + -1.0f);
+		noiseTextureFloats[index + 1] = fmod(rand(), (1.0f - -1.0f + 1) + -1.0f);
+		noiseTextureFloats[index + 2] = 0.0f;
+	}
+
 
 	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
 
