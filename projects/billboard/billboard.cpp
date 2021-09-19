@@ -37,9 +37,8 @@ struct SVertexBuffer
 {
 	float m_ViewProjectionMatrix[16];       // Result of view matrix * projection matrix.
 	float m_WorldMatrix[16];                // The world matrix to transform a mesh from local space to world space.
-	float m_PositionInWorldSpace[4];
-	float m_CameraAt[4];
-	float m_CameraPos[4];
+	float m_CameraPos[3];
+	float FILLER[1];
 };
 
 // -----------------------------------------------------------------------------
@@ -64,13 +63,6 @@ private:
 
 	BHandle m_pTreeTexture;
 
-	float m_rotDeg = 0.0f;
-	float m_rotDirection = 1.0f;
-	float m_posX;
-	float m_posY;
-	float m_posZ;
-	bool m_moveRight = true;
-
 	float m_camPosX;
 	float m_camPosY;
 	float m_camPosZ;
@@ -94,6 +86,7 @@ private:
 	virtual bool InternOnCreateTextures();
 	virtual bool InternOnReleaseTextures();
 	virtual bool InternOnResize(int _Width, int _Height);
+	virtual bool InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _IsAltDown);
 	virtual bool InternOnUpdate();
 	virtual bool InternOnFrame();
 };
@@ -108,17 +101,13 @@ CApplication::CApplication()
 	, m_pPixelShader(nullptr)
 	, m_pMaterial(nullptr)
 	, m_pTreeTexture(nullptr)
-	, m_posX(0.0f)
-	, m_posY(0.0f)
-	, m_posZ(0.0f)
 	, m_camPosX(0.0f)
 	, m_camPosY(0.0f)
 	, m_camPosZ(-8.0f)
 	, m_radius(8)
-	, m_interval(0.01)
+	, m_interval(0.025)
 	, m_theta(5)
-	, m_alpha(0)
-	, m_angle(10)
+	, m_alpha(90)
 {
 }
 
@@ -362,7 +351,16 @@ bool CApplication::InternOnFrame()
 	float rotationMatrix[16];
 	float translationMatrix[16];
 
-	// rotate camera
+	// Set world matrix in the vertex buffer for this frame
+	GetIdentityMatrix(VertexBuffer.m_WorldMatrix);
+	GetRotationXMatrix(0.0f, rotationMatrix);
+	GetTranslationMatrix(0.0f, 0.0f, 0.0f, translationMatrix);
+	MulMatrix(rotationMatrix, translationMatrix, VertexBuffer.m_WorldMatrix);
+	// Set the ViewProjectionMatrix in the vertex buffer for this frame
+	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
+
+	// Rotation of the camera around the center point 0,0,0 with the offset of m_alpha 
+	// which can be changed by either pressing a or d or enabling autoRotate
 	float x = m_radius * cos(m_theta);
 	float y = 0;
 	float z = m_radius * sin(m_theta);
@@ -372,62 +370,13 @@ bool CApplication::InternOnFrame()
 	m_camPosX = deltaX;
 	m_camPosZ = deltaZ;
 
-	m_alpha += m_interval;
+	// Automatic rotation
+	//m_alpha += m_interval;
 
-	GetIdentityMatrix(VertexBuffer.m_WorldMatrix);
-
-	GetRotationXMatrix(m_rotDeg, rotationMatrix);
-
-	GetTranslationMatrix(m_posX, 0.0f, 0.0f, translationMatrix);
-
-	MulMatrix(rotationMatrix, translationMatrix, VertexBuffer.m_WorldMatrix);
-
-	// Move texture object
-	/*if(m_rotDeg > 70)
-	{
-		m_rotDirection = -1;
-	}
-	if(m_rotDeg < -70)
-	{
-		m_rotDirection = 1;
-	}
-	m_rotDeg = m_rotDeg + (0.4 * m_rotDirection);
-
-	if(m_moveRight)
-	{
-		if(m_posX >= 2.0f)
-		{
-			m_moveRight = false;
-		}
-		m_posX += 0.025f;
-	}
-	else
-	{
-		if(m_posX <= -2.0f)
-		{
-			m_moveRight = true;
-		}
-		m_posX -= 0.025f;
-	}*/
-
-
-
-	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
-
-	VertexBuffer.m_PositionInWorldSpace[0] = m_posX;
-	VertexBuffer.m_PositionInWorldSpace[1] = m_posY;
-	VertexBuffer.m_PositionInWorldSpace[2] = m_posZ;
-
-	// TODO: Replace with camera variables
-	VertexBuffer.m_CameraAt[0] = 0.0f;
-	VertexBuffer.m_CameraAt[1] = 0.0f;
-	VertexBuffer.m_CameraAt[2] = 0.0f;
-
-	VertexBuffer.m_CameraPos[0] = 0.0f;
-	VertexBuffer.m_CameraPos[1] = 0.0f;
-	VertexBuffer.m_CameraPos[2] = -8.0f;
-
-	//std::cout << m_posX << " " << m_posY << " " << m_posZ << std::endl;
+	// Setting the cameraPos in the vertex buffer to the actual camera position (y should always be 0)
+	VertexBuffer.m_CameraPos[0] = m_camPosX;
+	VertexBuffer.m_CameraPos[1] = m_camPosY;
+	VertexBuffer.m_CameraPos[2] = m_camPosZ;
 
 	UploadConstantBuffer(&VertexBuffer, m_pVertexConstantBuffer);
 
@@ -436,6 +385,23 @@ bool CApplication::InternOnFrame()
 	// of the material on the GPU and render the mesh to the current render targets.
 	// -----------------------------------------------------------------------------
 	DrawMesh(m_pMesh);
+
+	return true;
+}
+
+bool CApplication::InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _IsAltDown)
+{
+	// Movement of the camera
+	if(_Key == 'A' && _IsKeyDown)
+	{
+		m_alpha += m_interval;
+		std::cout << "Turn left" << std::endl;
+	}
+	if(_Key == 'D' && _IsKeyDown)
+	{
+		m_alpha -= m_interval;
+		std::cout << "Turn right" << std::endl;
+	}
 
 	return true;
 }
