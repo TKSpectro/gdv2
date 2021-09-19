@@ -2,6 +2,7 @@
 #include "yoshix.h"
 
 #include <math.h>
+#include <iostream>
 
 using namespace gfx;
 
@@ -37,6 +38,8 @@ struct SVertexBuffer
 	float m_ViewProjectionMatrix[16];       // Result of view matrix * projection matrix.
 	float m_WorldMatrix[16];                // The world matrix to transform a mesh from local space to world space.
 	float m_PositionInWorldSpace[4];
+	float m_CameraAt[4];
+	float m_CameraPos[4];
 };
 
 // -----------------------------------------------------------------------------
@@ -68,6 +71,16 @@ private:
 	float m_posZ;
 	bool m_moveRight = true;
 
+	float m_camPosX;
+	float m_camPosY;
+	float m_camPosZ;
+
+	float m_radius;
+	float m_interval;
+	float m_theta;
+	float m_alpha;
+	float m_angle;
+
 private:
 
 	virtual bool InternOnCreateConstantBuffers();
@@ -98,6 +111,14 @@ CApplication::CApplication()
 	, m_posX(0.0f)
 	, m_posY(0.0f)
 	, m_posZ(0.0f)
+	, m_camPosX(0.0f)
+	, m_camPosY(0.0f)
+	, m_camPosZ(-8.0f)
+	, m_radius(8)
+	, m_interval(0.01)
+	, m_theta(5)
+	, m_alpha(0)
+	, m_angle(10)
 {
 }
 
@@ -318,9 +339,9 @@ bool CApplication::InternOnUpdate()
 	// stored in the 'm_ViewMatrix' matrix and uploaded in the 'InternOnFrame'
 	// method.
 	// -----------------------------------------------------------------------------
-	Eye[0] = 0.0f; At[0] = 0.0f; Up[0] = 0.0f;
-	Eye[1] = 0.0f; At[1] = 0.0f; Up[1] = 1.0f;
-	Eye[2] = -8.0f; At[2] = 0.0f; Up[2] = 0.0f;
+	Eye[0] = m_camPosX; At[0] = 0.0f; Up[0] = 0.0f;
+	Eye[1] = m_camPosY; At[1] = 0.0f; Up[1] = 1.0f;
+	Eye[2] = m_camPosZ; At[2] = 0.0f; Up[2] = 0.0f;
 
 	GetViewMatrix(Eye, At, Up, m_ViewMatrix);
 
@@ -341,6 +362,18 @@ bool CApplication::InternOnFrame()
 	float rotationMatrix[16];
 	float translationMatrix[16];
 
+	// rotate camera
+	float x = m_radius * cos(m_theta);
+	float y = 0;
+	float z = m_radius * sin(m_theta);
+	float deltaX = z * cos(m_alpha) - x * sin(m_alpha);
+	float deltaZ = x * cos(m_alpha) + z * sin(m_alpha);
+
+	m_camPosX = deltaX;
+	m_camPosZ = deltaZ;
+
+	m_alpha += m_interval;
+
 	GetIdentityMatrix(VertexBuffer.m_WorldMatrix);
 
 	GetRotationXMatrix(m_rotDeg, rotationMatrix);
@@ -349,7 +382,8 @@ bool CApplication::InternOnFrame()
 
 	MulMatrix(rotationMatrix, translationMatrix, VertexBuffer.m_WorldMatrix);
 
-	if(m_rotDeg > 70)
+	// Move texture object
+	/*if(m_rotDeg > 70)
 	{
 		m_rotDirection = -1;
 	}
@@ -374,13 +408,26 @@ bool CApplication::InternOnFrame()
 			m_moveRight = true;
 		}
 		m_posX -= 0.025f;
-	}
+	}*/
+
+
 
 	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
 
 	VertexBuffer.m_PositionInWorldSpace[0] = m_posX;
 	VertexBuffer.m_PositionInWorldSpace[1] = m_posY;
 	VertexBuffer.m_PositionInWorldSpace[2] = m_posZ;
+
+	// TODO: Replace with camera variables
+	VertexBuffer.m_CameraAt[0] = 0.0f;
+	VertexBuffer.m_CameraAt[1] = 0.0f;
+	VertexBuffer.m_CameraAt[2] = 0.0f;
+
+	VertexBuffer.m_CameraPos[0] = 0.0f;
+	VertexBuffer.m_CameraPos[1] = 0.0f;
+	VertexBuffer.m_CameraPos[2] = -8.0f;
+
+	//std::cout << m_posX << " " << m_posY << " " << m_posZ << std::endl;
 
 	UploadConstantBuffer(&VertexBuffer, m_pVertexConstantBuffer);
 
