@@ -617,5 +617,5 @@ void main()
 {
 	CApplication Application;
 
-	RunApplication(800, 600, "Billbord + Normal Mapping Shader", &Application);
+	RunApplication(800, 600, "Billbord + Normal Mapping Shader - Tom Kaeppler", &Application);
 }
