@@ -10,3 +10,8 @@ Billboard(Imposter) Shader + Normal(Bump) Mapping
 - Backward: S
 - Up: ArrowKey Up
 - Down: ArrowKey Down
+
+## Other Keys
+
+- Toggle Ground: G
+- Toggle Automatic rotation: Spacebar
