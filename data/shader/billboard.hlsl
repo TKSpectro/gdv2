@@ -60,7 +60,8 @@ PSInput VSShader(VSInput _Input)
 {
     PSInput Output = (PSInput) 0;
     
-    // Rotation only happens only around the y axis
+    // Rotation only happens around the y axis as the billboard will
+    // always look "straight" at the camera
     float3 yBaseVector = { 0.0f, 1.0f, 0.0f };
     yBaseVector = normalize(yBaseVector);
     
@@ -73,6 +74,8 @@ PSInput VSShader(VSInput _Input)
     float3 xBaseVector = cross(yBaseVector, zBaseVector);
     xBaseVector = normalize(xBaseVector);
     
+    // combine the 3 base vectors to the matrix with which we need
+    // to multiply for the rotation towards the camera
     float3x3 rotationMatrix =
     {
         xBaseVector,
@@ -90,11 +93,24 @@ PSInput VSShader(VSInput _Input)
 	// Get the clip space position.
 	// -------------------------------------------------------------------------------
     Output.m_CSPosition = mul(WSPosition, g_ViewProjectionMatrix);
+    
+    // -------------------------------------------------------------------------------
+	// Get world space values from the object space positions.
+	// -------------------------------------------------------------------------------
     Output.m_WSTangent = normalize(mul(_Input.m_OSTangent, (float3x3) g_WorldMatrix));
     Output.m_WSBinormal = normalize(mul(_Input.m_OSBinormal, (float3x3) g_WorldMatrix));
     Output.m_WSNormal = normalize(mul(_Input.m_OSNormal, (float3x3) g_WorldMatrix));
+    
+    // -------------------------------------------------------------------------------
+	// Get camera and light directions in WS by subtrating their positions by the
+    // current point position.
+	// -------------------------------------------------------------------------------
     Output.m_WSView = g_WSCameraPosition - WSPosition.xyz;
     Output.m_WSLight = g_WSLightPosition - WSPosition.xyz;
+    
+    // -------------------------------------------------------------------------------
+	// Give the texture coordinates through to the pixelshader.
+	// -------------------------------------------------------------------------------
     Output.m_TexCoord = _Input.m_TexCoord;
     
     return Output;
@@ -118,6 +134,7 @@ float4 PSShader(PSInput _Input) : SV_Target
     float4 DiffuseLight;
     float4 SpecularLight;
 
+    // Normalize all world space values
     WSTangent = normalize(_Input.m_WSTangent);
     WSBinormal = normalize(_Input.m_WSBinormal);
     WSNormal = normalize(_Input.m_WSNormal);
@@ -127,21 +144,19 @@ float4 PSShader(PSInput _Input) : SV_Target
 
     TS2WSMatrix = float3x3(WSTangent, WSBinormal, WSNormal);
 
+    // The normal map has rgb values between 0..255, those need to be
+    // mapped to values between -1..1 and for b (z-axis) between 0..1
     TSNormal = g_NormalMap.Sample(g_ColorMapSampler, _Input.m_TexCoord).rgb * 2.0f - 1.0f;
+    // Convert the normal map which is in tangent space to world space coordinates
     WSNormal = mul(TSNormal, TS2WSMatrix);
     WSNormal = normalize(WSNormal);
 
+    // Calculate light values based on good values
     AmbientLight = g_AmbientLightColor;
     DiffuseLight = g_DiffuseLightColor * max(dot(WSNormal, WSLight), 0.0f);
     SpecularLight = g_SpecularLightColor * pow(max(dot(WSNormal, WSHalf), 0.0f), g_SpecularExponent);
 	
     Light = AmbientLight + DiffuseLight + SpecularLight;
-    
-    
-/// Uncomment these lines separately to see the influence of the different light components
-//     return AmbientLight;
-//     return DiffuseLight;
-//     return SpecularLight;
     
     // Render the given texture
     return g_ColorMap.Sample(g_ColorMapSampler, _Input.m_TexCoord) * Light;

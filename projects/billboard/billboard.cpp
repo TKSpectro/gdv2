@@ -6,43 +6,18 @@
 
 using namespace gfx;
 
-// -----------------------------------------------------------------------------
-// Defines a constant buffer on the CPU. Note that this struct matches exactly
-// the 'VSBuffer' in the 'simple.fx' file. For easy communication between CPU
-// and GPU it is always a good idea to rebuild the GPU struct on the CPU side.
-// Node that the size of a constant buffer on bytes has to be a multiple of 16.
-// For example the following is not possible:
-// 
-//     struct SVertexBuffer
-//     {
-//         float m_ViewProjectionMatrix[16];
-//         float m_WorldMatrix[16];
-//         float m_Scalar;
-//     };
-//
-// The problem is the final member 'm_Scalar'. The two matrices at the begin
-// require 2 * 16 * 4 = 128 bytes, which is dividable by 16. Adding the four
-// bytes of 'm_Scalar' results in 132 bytes, which cannot be divided by 16.
-// Instead you have to use a 4D vector, even if that implies a waste of memory.
-// 
-//     struct SVertexBuffer
-//     {
-//         float m_ViewProjectionMatrix[16];
-//         float m_WorldMatrix[16];
-//         float m_Vector[4];           => store 'm_Scalar' in the first component of the 4D vector and waste the other three ones.
-//     };
-//     
-// -----------------------------------------------------------------------------
+// Vertex Buffer for the billboard shader
 struct SVertexBuffer
 {
-	float m_ViewProjectionMatrix[16];       // Result of view matrix * projection matrix.
-	float m_WorldMatrix[16];                // The world matrix to transform a mesh from local space to world space.
+	float m_ViewProjectionMatrix[16];
+	float m_WorldMatrix[16];
 	float m_WSCameraPosition[3];
 	float m_FILLER1;
 	float m_WSLightPosition[3];
 	float m_FILLER2;
 };
 
+// Pixel Buffer for the billboard shader
 struct SPixelBuffer
 {
 	float m_AmbientLightColor[4];
@@ -52,10 +27,11 @@ struct SPixelBuffer
 	float FILLER[3];
 };
 
+// Vertex Buffer for the just textured shader
 struct SGroundVertexBuffer
 {
-	float m_ViewProjectionMatrix[16];       // Result of view matrix * projection matrix.
-	float m_WorldMatrix[16];                // The world matrix to transform a mesh from local space to world space.
+	float m_ViewProjectionMatrix[16];
+	float m_WorldMatrix[16];
 };
 
 // -----------------------------------------------------------------------------
@@ -74,7 +50,7 @@ private:
 	float   m_ProjectionMatrix[16];     // The projection matrix to transform a mesh from view space into clip space.
 
 	BHandle m_pVertexConstantBuffer;    // A pointer to a YoshiX constant buffer, which defines global data for a vertex shader.
-	BHandle m_pPixelConstantBuffer;
+	BHandle m_pPixelConstantBuffer;		// A pointer to a YoshiX constant buffer, which defines global data for a vertex shader.
 
 	BHandle m_pVertexShader;            // A pointer to a YoshiX vertex shader, which processes each single vertex of the mesh.
 	BHandle m_pPixelShader;             // A pointer to a YoshiX pixel shader, which computes the color of each pixel visible of the mesh on the screen.
@@ -82,8 +58,8 @@ private:
 	BHandle m_pMaterial;                // A pointer to a YoshiX material, spawning the surface of the mesh.
 	BHandle m_pMesh;                    // A pointer to a YoshiX mesh, which represents a single triangle.
 
-	BHandle m_pColorTexture;
-	BHandle m_pNormalTexture;
+	BHandle m_pColorTexture;			// A pointer to a texture which contains a actual picture to display.
+	BHandle m_pNormalTexture;			// A pointer to a texture which contains the normal for the the previous picture.
 
 	// Ground
 	BHandle m_pGroundVertexConstantBuffer;
@@ -93,7 +69,7 @@ private:
 	BHandle m_pGroundMesh;
 	BHandle m_pGroundTexture;
 
-	// Camera Position
+	// Camera
 	float m_camPosX;
 	float m_camPosY;
 	float m_camPosZ;
@@ -102,15 +78,18 @@ private:
 	float m_camAtY;
 	float m_camAtZ;
 
+	// This can be turned on for a automatic rotation around the center point
 	bool m_autoRotation;
 
+	// Variables for calculating a point on a circle around the center point
 	float m_radius;
 	float m_interval;
 	float m_theta;
 	float m_alpha;
 
-	bool m_useTree;
-	bool m_showGround;
+	// Config variables
+	bool m_useTree;		// If this variable is set we use a tree texture instead of the wall
+	bool m_showGround;	// This variable gets used to decide if the ground should be rendered
 
 private:
 
@@ -159,7 +138,7 @@ CApplication::CApplication()
 	, m_interval(0.025)
 	, m_theta(5)
 	, m_alpha(90)
-	, m_useTree(false)
+	, m_useTree(false) 		// You can toggle useTree here to get the tree texture instead of the wall
 	, m_showGround(true)
 {
 }
@@ -243,9 +222,8 @@ bool CApplication::InternOnReleaseShader()
 bool CApplication::InternOnCreateMaterials()
 {
 	// -----------------------------------------------------------------------------
-	// Create a material spawning the mesh. Note that you can use the same material
-	// for multiple meshes as long as the input layout of the vertex shader matches
-	// the vertex layout of the mesh.
+	// Create a material spawning the mesh. This material will be used for the
+	// actual billboard.
 	// -----------------------------------------------------------------------------
 	SMaterialInfo MaterialInfo;
 
@@ -277,8 +255,10 @@ bool CApplication::InternOnCreateMaterials()
 
 	CreateMaterial(MaterialInfo, &m_pMaterial);
 
-	// GROUND
-
+	// -----------------------------------------------------------------------------
+	// Create a material spawning the mesh. This material will be used for the
+	// non billboard objects which should just be textured objects.
+	// -----------------------------------------------------------------------------
 	SMaterialInfo MaterialGroundInfo;
 
 	MaterialGroundInfo.m_NumberOfTextures = 1;									// The material does not need textures, because the pixel shader just returns a constant color.
@@ -329,8 +309,6 @@ bool CApplication::InternOnCreateTextures()
 		CreateTexture("..\\data\\images\\wall_color_map.dds", &m_pColorTexture);
 		CreateTexture("..\\data\\images\\wall_normal_map.dds", &m_pNormalTexture);
 	}
-
-
 
 	CreateTexture("..\\data\\images\\ground.dds", &m_pGroundTexture);
 
@@ -398,7 +376,7 @@ bool CApplication::InternOnCreateMeshes()
 	CreateMesh(MeshInfo, &m_pMesh);
 
 	// -----------------------------------------------------------------------------
-	// GROUND
+	// Build up the mesh for a simple ground with a texture laying on it.
 	// -----------------------------------------------------------------------------
 	float GroundVertices[][5] =
 	{
@@ -630,7 +608,6 @@ bool CApplication::InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _Is
 		std::cout << "Toggle drawing of ground" << std::endl;
 	}
 
-
 	return true;
 }
 
@@ -640,5 +617,5 @@ void main()
 {
 	CApplication Application;
 
-	RunApplication(800, 600, "YoshiX Example", &Application);
+	RunApplication(800, 600, "Billbord + Normal Mapping Shader", &Application);
 }
