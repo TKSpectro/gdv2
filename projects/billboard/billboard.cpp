@@ -37,8 +37,19 @@ struct SVertexBuffer
 {
 	float m_ViewProjectionMatrix[16];       // Result of view matrix * projection matrix.
 	float m_WorldMatrix[16];                // The world matrix to transform a mesh from local space to world space.
-	float m_CameraPos[3];
-	float FILLER[1];
+	float m_WSCameraPosition[3];
+	float m_FILLER1;
+	float m_WSLightPosition[3];
+	float m_FILLER2;
+};
+
+struct SPixelBuffer
+{
+	float m_AmbientLightColor[4];
+	float m_DiffuseLightColor[4];
+	float m_SpecularColor[4];
+	float m_SpecularExponent;
+	float FILLER[3];
 };
 
 // -----------------------------------------------------------------------------
@@ -55,13 +66,18 @@ private:
 	float   m_FieldOfViewY;             // Vertical view angle of the camera
 	float   m_ViewMatrix[16];           // The view matrix to transform a mesh from world space into view space.
 	float   m_ProjectionMatrix[16];     // The projection matrix to transform a mesh from view space into clip space.
+
 	BHandle m_pVertexConstantBuffer;    // A pointer to a YoshiX constant buffer, which defines global data for a vertex shader.
+	BHandle m_pPixelConstantBuffer;
+
 	BHandle m_pVertexShader;            // A pointer to a YoshiX vertex shader, which processes each single vertex of the mesh.
 	BHandle m_pPixelShader;             // A pointer to a YoshiX pixel shader, which computes the color of each pixel visible of the mesh on the screen.
+
 	BHandle m_pMaterial;                // A pointer to a YoshiX material, spawning the surface of the mesh.
 	BHandle m_pMesh;                    // A pointer to a YoshiX mesh, which represents a single triangle.
 
-	BHandle m_pTreeTexture;
+	BHandle m_pColorTexture;
+	BHandle m_pNormalTexture;
 
 	float m_camPosX;
 	float m_camPosY;
@@ -71,7 +87,6 @@ private:
 	float m_interval;
 	float m_theta;
 	float m_alpha;
-	float m_angle;
 
 private:
 
@@ -97,14 +112,16 @@ CApplication::CApplication()
 	: m_FieldOfViewY(60.0f)        // Set the vertical view angle of the camera to 60 degrees.
 	, m_pMesh(nullptr)
 	, m_pVertexConstantBuffer(nullptr)
+	, m_pPixelConstantBuffer(nullptr)
 	, m_pVertexShader(nullptr)
 	, m_pPixelShader(nullptr)
 	, m_pMaterial(nullptr)
-	, m_pTreeTexture(nullptr)
+	, m_pColorTexture(nullptr)
+	, m_pNormalTexture(nullptr)
 	, m_camPosX(0.0f)
 	, m_camPosY(0.0f)
-	, m_camPosZ(-8.0f)
-	, m_radius(8)
+	, m_camPosZ(-4.0f)
+	, m_radius(4)
 	, m_interval(0.025)
 	, m_theta(5)
 	, m_alpha(90)
@@ -130,6 +147,7 @@ bool CApplication::InternOnCreateConstantBuffers()
 	// when creating the material.
 	// -----------------------------------------------------------------------------
 	CreateConstantBuffer(sizeof(SVertexBuffer), &m_pVertexConstantBuffer);
+	CreateConstantBuffer(sizeof(SPixelBuffer), &m_pPixelConstantBuffer);
 
 	return true;
 }
@@ -142,6 +160,7 @@ bool CApplication::InternOnReleaseConstantBuffers()
 	// Important to release the buffer again when the application is shut down.
 	// -----------------------------------------------------------------------------
 	ReleaseConstantBuffer(m_pVertexConstantBuffer);
+	ReleaseConstantBuffer(m_pPixelConstantBuffer);
 
 	return true;
 }
@@ -183,18 +202,30 @@ bool CApplication::InternOnCreateMaterials()
 	// -----------------------------------------------------------------------------
 	SMaterialInfo MaterialInfo;
 
-	MaterialInfo.m_NumberOfTextures = 1;									// The material does not need textures, because the pixel shader just returns a constant color.
-	MaterialInfo.m_pTextures[0] = m_pTreeTexture;              // The handle to the texture.
+	MaterialInfo.m_NumberOfTextures = 2;									// The material does not need textures, because the pixel shader just returns a constant color.
+	MaterialInfo.m_pTextures[0] = m_pColorTexture;              // The handle to the texture.
+	MaterialInfo.m_pTextures[1] = m_pNormalTexture;
+
 	MaterialInfo.m_NumberOfVertexConstantBuffers = 1;						// We need one vertex constant buffer to pass world matrix and view projection matrix to the vertex shader.
 	MaterialInfo.m_pVertexConstantBuffers[0] = m_pVertexConstantBuffer;     // Pass the handle to the created vertex constant buffer.
-	MaterialInfo.m_NumberOfPixelConstantBuffers = 0;						// We do not need any global data in the pixel shader.
+
+	MaterialInfo.m_NumberOfPixelConstantBuffers = 1;						// We do not need any global data in the pixel shader.
+	MaterialInfo.m_pPixelConstantBuffers[0] = m_pPixelConstantBuffer;
+
 	MaterialInfo.m_pVertexShader = m_pVertexShader;							// The handle to the vertex shader.
 	MaterialInfo.m_pPixelShader = m_pPixelShader;							// The handle to the pixel shader.
-	MaterialInfo.m_NumberOfInputElements = 2;								// The vertex shader requests the position as only argument.
+
+	MaterialInfo.m_NumberOfInputElements = 5;								// The vertex shader requests the position as only argument.
 	MaterialInfo.m_InputElements[0].m_pName = "POSITION";					// The semantic name of the argument, which matches exactly the identifier in the 'VSInput' struct.
 	MaterialInfo.m_InputElements[0].m_Type = SInputElement::Float3;			// The position is a 3D vector with floating points.
-	MaterialInfo.m_InputElements[1].m_pName = "TEXCOORD";              // The semantic name of the second argument, which matches exactly the second identifier in the 'VSInput' struct.
-	MaterialInfo.m_InputElements[1].m_Type = SInputElement::Float2;   // The texture coordinates are a 2D vector with floating points.
+	MaterialInfo.m_InputElements[1].m_pName = "TANGENT";
+	MaterialInfo.m_InputElements[1].m_Type = SInputElement::Float3;
+	MaterialInfo.m_InputElements[2].m_pName = "BINORMAL";
+	MaterialInfo.m_InputElements[2].m_Type = SInputElement::Float3;
+	MaterialInfo.m_InputElements[3].m_pName = "NORMAL";
+	MaterialInfo.m_InputElements[3].m_Type = SInputElement::Float3;
+	MaterialInfo.m_InputElements[4].m_pName = "TEXCOORD";              // The semantic name of the second argument, which matches exactly the second identifier in the 'VSInput' struct.
+	MaterialInfo.m_InputElements[4].m_Type = SInputElement::Float2;   // The texture coordinates are a 2D vector with floating points.
 
 	CreateMaterial(MaterialInfo, &m_pMaterial);
 
@@ -217,7 +248,8 @@ bool CApplication::InternOnReleaseMaterials()
 
 bool CApplication::InternOnCreateTextures()
 {
-	CreateTexture("..\\data\\images\\leaf2.dds", &m_pTreeTexture);
+	CreateTexture("..\\data\\images\\wall_color_map.dds", &m_pColorTexture);
+	CreateTexture("..\\data\\images\\wall_normal_map.dds", &m_pNormalTexture);
 
 	return true;
 }
@@ -226,7 +258,8 @@ bool CApplication::InternOnCreateTextures()
 
 bool CApplication::InternOnReleaseTextures()
 {
-	ReleaseTexture(m_pTreeTexture);
+	ReleaseTexture(m_pColorTexture);
+	ReleaseTexture(m_pNormalTexture);
 
 	return true;
 }
@@ -244,12 +277,12 @@ bool CApplication::InternOnCreateMeshes()
 	// exactly the layout of each single vertex defined here.
 	// -----------------------------------------------------------------------------
 
-	float SquareVertices[][5] =
+	float SquareVertices[][14] =
 	{
-		{ -1, -1, 0, 0.0f, 1.0f },
-		{  1, -1, 0, 1.0f, 1.0f },
-		{  1,  1, 0, 1.0f, 0.0f },
-		{ -1,  1, 0, 0.0f, 0.0f },
+		{ -1.0f, -1.0f, 0.0f,1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f  },
+		{  1.0f, -1.0f, 0.0f,1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f  },
+		{  1.0f,  1.0f, 0.0f,1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f  },
+		{ -1.0f,  1.0f, 0.0f,1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f  },
 	};
 
 	// -----------------------------------------------------------------------------
@@ -353,9 +386,9 @@ bool CApplication::InternOnFrame()
 
 	// Set world matrix in the vertex buffer for this frame
 	GetIdentityMatrix(VertexBuffer.m_WorldMatrix);
-	GetRotationXMatrix(0.0f, rotationMatrix);
+	/*GetRotationXMatrix(0.0f, rotationMatrix);
 	GetTranslationMatrix(0.0f, 0.0f, 0.0f, translationMatrix);
-	MulMatrix(rotationMatrix, translationMatrix, VertexBuffer.m_WorldMatrix);
+	MulMatrix(rotationMatrix, translationMatrix, VertexBuffer.m_WorldMatrix);*/
 	// Set the ViewProjectionMatrix in the vertex buffer for this frame
 	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
 
@@ -374,11 +407,37 @@ bool CApplication::InternOnFrame()
 	//m_alpha += m_interval;
 
 	// Setting the cameraPos in the vertex buffer to the actual camera position (y should always be 0)
-	VertexBuffer.m_CameraPos[0] = m_camPosX;
-	VertexBuffer.m_CameraPos[1] = m_camPosY;
-	VertexBuffer.m_CameraPos[2] = m_camPosZ;
+	VertexBuffer.m_WSCameraPosition[0] = m_camPosX;
+	VertexBuffer.m_WSCameraPosition[1] = m_camPosY;
+	VertexBuffer.m_WSCameraPosition[2] = m_camPosZ;
+
+	// Set light to a constant position
+	VertexBuffer.m_WSLightPosition[0] = 5.0f;
+	VertexBuffer.m_WSLightPosition[1] = 5.0f;
+	VertexBuffer.m_WSLightPosition[2] = -20.0f;
 
 	UploadConstantBuffer(&VertexBuffer, m_pVertexConstantBuffer);
+
+	SPixelBuffer PixelBuffer;
+
+	PixelBuffer.m_AmbientLightColor[0] = 0.2f;
+	PixelBuffer.m_AmbientLightColor[1] = 0.2f;
+	PixelBuffer.m_AmbientLightColor[2] = 0.2f;
+	PixelBuffer.m_AmbientLightColor[3] = 1.0f;
+
+	PixelBuffer.m_DiffuseLightColor[0] = 0.7f;
+	PixelBuffer.m_DiffuseLightColor[1] = 0.7f;
+	PixelBuffer.m_DiffuseLightColor[2] = 0.7f;
+	PixelBuffer.m_DiffuseLightColor[3] = 1.0f;
+
+	PixelBuffer.m_SpecularColor[0] = 1.0f;
+	PixelBuffer.m_SpecularColor[1] = 1.0f;
+	PixelBuffer.m_SpecularColor[2] = 1.0f;
+	PixelBuffer.m_SpecularColor[3] = 1.0f;
+
+	PixelBuffer.m_SpecularExponent = 100.0f;
+
+	UploadConstantBuffer(&PixelBuffer, m_pPixelConstantBuffer);
 
 	// -----------------------------------------------------------------------------
 	// Draw the mesh. This will activate the shader, constant buffers, and textures
@@ -392,12 +451,14 @@ bool CApplication::InternOnFrame()
 bool CApplication::InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _IsAltDown)
 {
 	// Movement of the camera
-	if(_Key == 'A' && _IsKeyDown)
+	// Key 37 is left arrow
+	if((_Key == 'A' || _Key == 37) && _IsKeyDown)
 	{
 		m_alpha += m_interval;
 		std::cout << "Turn left" << std::endl;
 	}
-	if(_Key == 'D' && _IsKeyDown)
+	// Key 39 is right arrow
+	if((_Key == 'D' || _Key == 39) && _IsKeyDown)
 	{
 		m_alpha -= m_interval;
 		std::cout << "Turn right" << std::endl;
