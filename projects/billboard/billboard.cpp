@@ -83,6 +83,8 @@ private:
 	float m_camPosY;
 	float m_camPosZ;
 
+	bool m_autoRotation;
+
 	float m_radius;
 	float m_interval;
 	float m_theta;
@@ -121,6 +123,7 @@ CApplication::CApplication()
 	, m_camPosX(0.0f)
 	, m_camPosY(0.0f)
 	, m_camPosZ(-4.0f)
+	, m_autoRotation(false)
 	, m_radius(4)
 	, m_interval(0.025)
 	, m_theta(5)
@@ -399,7 +402,10 @@ bool CApplication::InternOnFrame()
 	m_camPosZ = deltaZ;
 
 	// Automatic rotation
-	//m_alpha += m_interval;
+	if(m_autoRotation)
+	{
+		m_alpha += m_interval;
+	}
 
 	// Setting the cameraPos in the vertex buffer to the actual camera position (y should always be 0)
 	VertexBuffer.m_WSCameraPosition[0] = m_camPosX;
@@ -415,6 +421,8 @@ bool CApplication::InternOnFrame()
 
 	SPixelBuffer PixelBuffer;
 
+	// Set the Lights Colors and Specular Color to static values
+	// which work well for lighting
 	PixelBuffer.m_AmbientLightColor[0] = 0.2f;
 	PixelBuffer.m_AmbientLightColor[1] = 0.2f;
 	PixelBuffer.m_AmbientLightColor[2] = 0.2f;
@@ -457,6 +465,13 @@ bool CApplication::InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _Is
 	{
 		m_alpha -= m_interval;
 		std::cout << "Turn right" << std::endl;
+	}
+
+	// Toggle automatic rotation of camera with spacebar
+	if((_Key == 32) && _IsKeyDown)
+	{
+		m_autoRotation = !m_autoRotation;
+		std::cout << "Toggle automatic rotation" << std::endl;
 	}
 
 	return true;
