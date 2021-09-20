@@ -269,20 +269,17 @@ bool CApplication::InternOnReleaseTextures()
 bool CApplication::InternOnCreateMeshes()
 {
 	// -----------------------------------------------------------------------------
-	// Define the vertices of the mesh. We have a very simple vertex layout here,
-	// because each vertex contains only its position. Take a look into the 
-	// 'simple.fx' file and there into the 'VSShader'. As you can see the 'VSShader'
-	// expects one argument of type 'VSInput', which is a struct containing the
-	// arguments as a set of members. Note that the content of the struct matches
-	// exactly the layout of each single vertex defined here.
+	// Define the vertices of the mesh. This is a relatively complex data structure
+	// in the form of an interleaved storage, where we place all information for one
+	// point into the same array. Layout: Position(3D), TextureCoords(2D), 
+	// Tangent (3D), Binormal (3D), Normal (3D)
 	// -----------------------------------------------------------------------------
-
 	float SquareVertices[][14] =
 	{
-		{ -1.0f, -1.0f, 0.0f,1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f  },
-		{  1.0f, -1.0f, 0.0f,1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f  },
-		{  1.0f,  1.0f, 0.0f,1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f  },
-		{ -1.0f,  1.0f, 0.0f,1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f  },
+		{ -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f  },
+		{  1.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f  },
+		{  1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f  },
+		{ -1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f  },
 	};
 
 	// -----------------------------------------------------------------------------
@@ -294,7 +291,6 @@ bool CApplication::InternOnCreateMeshes()
 	// define the indices of the addressed vertices of the triangle in counter-
 	// clockwise order.
 	// -----------------------------------------------------------------------------
-
 	int SquareIndices[][3] =
 	{
 		{  0,  1,  2 },
@@ -359,7 +355,8 @@ bool CApplication::InternOnUpdate()
 	// -----------------------------------------------------------------------------
 	// Define position and orientation of the camera in the world. The result is
 	// stored in the 'm_ViewMatrix' matrix and uploaded in the 'InternOnFrame'
-	// method.
+	// method. We use variables for the position of the camera, so it can be changed
+	// via inputs of the user.
 	// -----------------------------------------------------------------------------
 	Eye[0] = m_camPosX; At[0] = 0.0f; Up[0] = 0.0f;
 	Eye[1] = m_camPosY; At[1] = 0.0f; Up[1] = 1.0f;
@@ -386,9 +383,7 @@ bool CApplication::InternOnFrame()
 
 	// Set world matrix in the vertex buffer for this frame
 	GetIdentityMatrix(VertexBuffer.m_WorldMatrix);
-	/*GetRotationXMatrix(0.0f, rotationMatrix);
-	GetTranslationMatrix(0.0f, 0.0f, 0.0f, translationMatrix);
-	MulMatrix(rotationMatrix, translationMatrix, VertexBuffer.m_WorldMatrix);*/
+
 	// Set the ViewProjectionMatrix in the vertex buffer for this frame
 	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
 
@@ -411,7 +406,7 @@ bool CApplication::InternOnFrame()
 	VertexBuffer.m_WSCameraPosition[1] = m_camPosY;
 	VertexBuffer.m_WSCameraPosition[2] = m_camPosZ;
 
-	// Set light to a constant position
+	// Set light to a constant position, so we can se reflections on the texture.
 	VertexBuffer.m_WSLightPosition[0] = 5.0f;
 	VertexBuffer.m_WSLightPosition[1] = 5.0f;
 	VertexBuffer.m_WSLightPosition[2] = -20.0f;
