@@ -52,6 +52,12 @@ struct SPixelBuffer
 	float FILLER[3];
 };
 
+struct SGroundVertexBuffer
+{
+	float m_ViewProjectionMatrix[16];       // Result of view matrix * projection matrix.
+	float m_WorldMatrix[16];                // The world matrix to transform a mesh from local space to world space.
+};
+
 // -----------------------------------------------------------------------------
 
 class CApplication : public IApplication
@@ -79,9 +85,22 @@ private:
 	BHandle m_pColorTexture;
 	BHandle m_pNormalTexture;
 
+	// Ground
+	BHandle m_pGroundVertexConstantBuffer;
+	BHandle m_pGroundVertexShader;
+	BHandle m_pGroundPixelShader;
+	BHandle m_pGroundMaterial;
+	BHandle m_pGroundMesh;
+	BHandle m_pGroundTexture;
+
+	// Camera Position
 	float m_camPosX;
 	float m_camPosY;
 	float m_camPosZ;
+
+	float m_camAtX;
+	float m_camAtY;
+	float m_camAtZ;
 
 	bool m_autoRotation;
 
@@ -89,6 +108,9 @@ private:
 	float m_interval;
 	float m_theta;
 	float m_alpha;
+
+	bool m_useTree;
+	bool m_showGround;
 
 private:
 
@@ -120,14 +142,25 @@ CApplication::CApplication()
 	, m_pMaterial(nullptr)
 	, m_pColorTexture(nullptr)
 	, m_pNormalTexture(nullptr)
+	, m_pGroundVertexConstantBuffer(nullptr)
+	, m_pGroundVertexShader(nullptr)
+	, m_pGroundPixelShader(nullptr)
+	, m_pGroundTexture(nullptr)
+	, m_pGroundMesh(nullptr)
+	, m_pGroundMaterial(nullptr)
 	, m_camPosX(0.0f)
-	, m_camPosY(0.0f)
+	, m_camPosY(1.0f)
 	, m_camPosZ(-4.0f)
+	, m_camAtX(0.0f)
+	, m_camAtY(0.0f)
+	, m_camAtZ(0.0f)
 	, m_autoRotation(false)
 	, m_radius(4)
 	, m_interval(0.025)
 	, m_theta(5)
 	, m_alpha(90)
+	, m_useTree(false)
+	, m_showGround(true)
 {
 }
 
@@ -152,6 +185,8 @@ bool CApplication::InternOnCreateConstantBuffers()
 	CreateConstantBuffer(sizeof(SVertexBuffer), &m_pVertexConstantBuffer);
 	CreateConstantBuffer(sizeof(SPixelBuffer), &m_pPixelConstantBuffer);
 
+	CreateConstantBuffer(sizeof(SGroundVertexBuffer), &m_pGroundVertexConstantBuffer);
+
 	return true;
 }
 
@@ -164,6 +199,8 @@ bool CApplication::InternOnReleaseConstantBuffers()
 	// -----------------------------------------------------------------------------
 	ReleaseConstantBuffer(m_pVertexConstantBuffer);
 	ReleaseConstantBuffer(m_pPixelConstantBuffer);
+
+	ReleaseConstantBuffer(m_pGroundVertexConstantBuffer);
 
 	return true;
 }
@@ -178,6 +215,10 @@ bool CApplication::InternOnCreateShader()
 	CreateVertexShader("..\\data\\shader\\billboard.hlsl", "VSShader", &m_pVertexShader);
 	CreatePixelShader("..\\data\\shader\\billboard.hlsl", "PSShader", &m_pPixelShader);
 
+	CreateVertexShader("..\\data\\shader\\textured.fx", "VSShader", &m_pGroundVertexShader);
+	CreatePixelShader("..\\data\\shader\\textured.fx", "PSShader", &m_pGroundPixelShader);
+
+
 	return true;
 }
 
@@ -190,6 +231,9 @@ bool CApplication::InternOnReleaseShader()
 	// -----------------------------------------------------------------------------
 	ReleaseVertexShader(m_pVertexShader);
 	ReleasePixelShader(m_pPixelShader);
+
+	ReleaseVertexShader(m_pGroundVertexShader);
+	ReleasePixelShader(m_pGroundPixelShader);
 
 	return true;
 }
@@ -205,9 +249,10 @@ bool CApplication::InternOnCreateMaterials()
 	// -----------------------------------------------------------------------------
 	SMaterialInfo MaterialInfo;
 
-	MaterialInfo.m_NumberOfTextures = 2;									// The material does not need textures, because the pixel shader just returns a constant color.
-	MaterialInfo.m_pTextures[0] = m_pColorTexture;              // The handle to the texture.
+	MaterialInfo.m_NumberOfTextures = 3;									// The material does not need textures, because the pixel shader just returns a constant color.
+	MaterialInfo.m_pTextures[0] = m_pColorTexture;							// The handle to the texture.
 	MaterialInfo.m_pTextures[1] = m_pNormalTexture;
+	MaterialInfo.m_pTextures[2] = m_pGroundTexture;
 
 	MaterialInfo.m_NumberOfVertexConstantBuffers = 1;						// We need one vertex constant buffer to pass world matrix and view projection matrix to the vertex shader.
 	MaterialInfo.m_pVertexConstantBuffers[0] = m_pVertexConstantBuffer;     // Pass the handle to the created vertex constant buffer.
@@ -232,6 +277,28 @@ bool CApplication::InternOnCreateMaterials()
 
 	CreateMaterial(MaterialInfo, &m_pMaterial);
 
+	// GROUND
+
+	SMaterialInfo MaterialGroundInfo;
+
+	MaterialGroundInfo.m_NumberOfTextures = 1;									// The material does not need textures, because the pixel shader just returns a constant color.
+	MaterialGroundInfo.m_pTextures[0] = m_pGroundTexture;
+
+	MaterialGroundInfo.m_NumberOfVertexConstantBuffers = 1;						// We need one vertex constant buffer to pass world matrix and view projection matrix to the vertex shader.
+	MaterialGroundInfo.m_pVertexConstantBuffers[0] = m_pGroundVertexConstantBuffer;     // Pass the handle to the created vertex constant buffer.					// We need one vertex constant buffer to pass world matrix and view projection matrix to the vertex shader.
+	MaterialGroundInfo.m_NumberOfPixelConstantBuffers = 0;						// We do not need any global data in the pixel shader.
+
+	MaterialGroundInfo.m_pVertexShader = m_pGroundVertexShader;							// The handle to the vertex shader.
+	MaterialGroundInfo.m_pPixelShader = m_pGroundPixelShader;							// The handle to the pixel shader.
+
+	MaterialGroundInfo.m_NumberOfInputElements = 2;								// The vertex shader requests the position as only argument.
+	MaterialGroundInfo.m_InputElements[0].m_pName = "POSITION";					// The semantic name of the argument, which matches exactly the identifier in the 'VSInput' struct.
+	MaterialGroundInfo.m_InputElements[0].m_Type = SInputElement::Float3;			// The position is a 3D vector with floating points.
+	MaterialGroundInfo.m_InputElements[1].m_pName = "TEXCOORD";              // The semantic name of the second argument, which matches exactly the second identifier in the 'VSInput' struct.
+	MaterialGroundInfo.m_InputElements[1].m_Type = SInputElement::Float2;   // The texture coordinates are a 2D vector with floating points.
+
+	CreateMaterial(MaterialGroundInfo, &m_pGroundMaterial);
+
 	return true;
 }
 
@@ -243,6 +310,7 @@ bool CApplication::InternOnReleaseMaterials()
 	// Important to release the material again when the application is shut down.
 	// -----------------------------------------------------------------------------
 	ReleaseMaterial(m_pMaterial);
+	ReleaseMaterial(m_pGroundMaterial);
 
 	return true;
 }
@@ -251,8 +319,20 @@ bool CApplication::InternOnReleaseMaterials()
 
 bool CApplication::InternOnCreateTextures()
 {
-	CreateTexture("..\\data\\images\\wall_color_map.dds", &m_pColorTexture);
-	CreateTexture("..\\data\\images\\wall_normal_map.dds", &m_pNormalTexture);
+	if(m_useTree)
+	{
+		CreateTexture("..\\data\\images\\tree_color_map.dds", &m_pColorTexture);
+		CreateTexture("..\\data\\images\\tree_normal_map.png", &m_pNormalTexture);
+	}
+	else
+	{
+		CreateTexture("..\\data\\images\\wall_color_map.dds", &m_pColorTexture);
+		CreateTexture("..\\data\\images\\wall_normal_map.dds", &m_pNormalTexture);
+	}
+
+
+
+	CreateTexture("..\\data\\images\\ground.dds", &m_pGroundTexture);
 
 	return true;
 }
@@ -263,6 +343,8 @@ bool CApplication::InternOnReleaseTextures()
 {
 	ReleaseTexture(m_pColorTexture);
 	ReleaseTexture(m_pNormalTexture);
+
+	ReleaseTexture(m_pGroundTexture);
 
 	return true;
 }
@@ -315,6 +397,33 @@ bool CApplication::InternOnCreateMeshes()
 
 	CreateMesh(MeshInfo, &m_pMesh);
 
+	// -----------------------------------------------------------------------------
+	// GROUND
+	// -----------------------------------------------------------------------------
+	float GroundVertices[][5] =
+	{
+		{ -4.0f, -1.0f, -4.0f, 0.0f, 1.0f  },
+		{  4.0f, -1.0f, -4.0f, 1.0f, 1.0f  },
+		{  4.0f, -1.0f,  4.0f, 1.0f, 0.0f  },
+		{ -4.0f, -1.0f,  4.0f, 0.0f, 0.0f  },
+	};
+
+	int GroundIndices[][3] =
+	{
+		{  0,  1,  2 },
+		{  0,  2,  3 },
+	};
+
+	SMeshInfo GroundMeshInfo;
+
+	GroundMeshInfo.m_pVertices = &GroundVertices[0][0];      // Pointer to the first float of the first vertex.
+	GroundMeshInfo.m_NumberOfVertices = 4;                            // The number of vertices.
+	GroundMeshInfo.m_pIndices = &GroundIndices[0][0];       // Pointer to the first index.
+	GroundMeshInfo.m_NumberOfIndices = 6;                            // The number of indices (has to be dividable by 3).
+	GroundMeshInfo.m_pMaterial = m_pGroundMaterial;                  // A handle to the material covering the mesh.
+
+	CreateMesh(GroundMeshInfo, &m_pGroundMesh);
+
 	return true;
 }
 
@@ -326,6 +435,7 @@ bool CApplication::InternOnReleaseMeshes()
 	// Important to release the mesh again when the application is shut down.
 	// -----------------------------------------------------------------------------
 	ReleaseMesh(m_pMesh);
+	ReleaseMesh(m_pGroundMesh);
 
 	return true;
 }
@@ -361,9 +471,9 @@ bool CApplication::InternOnUpdate()
 	// method. We use variables for the position of the camera, so it can be changed
 	// via inputs of the user.
 	// -----------------------------------------------------------------------------
-	Eye[0] = m_camPosX; At[0] = 0.0f; Up[0] = 0.0f;
-	Eye[1] = m_camPosY; At[1] = 0.0f; Up[1] = 1.0f;
-	Eye[2] = m_camPosZ; At[2] = 0.0f; Up[2] = 0.0f;
+	Eye[0] = m_camPosX; At[0] = m_camAtX; Up[0] = 0.0f;
+	Eye[1] = m_camPosY; At[1] = m_camAtZ; Up[1] = 1.0f;
+	Eye[2] = m_camPosZ; At[2] = m_camAtY; Up[2] = 0.0f;
 
 	GetViewMatrix(Eye, At, Up, m_ViewMatrix);
 
@@ -448,31 +558,81 @@ bool CApplication::InternOnFrame()
 	// -----------------------------------------------------------------------------
 	DrawMesh(m_pMesh);
 
+
+	if(m_showGround)
+	{
+		// -----------------------------------------------------------------------------
+		// Upload the world matrix and the view projection matrix to the GPU. This has
+		// to be done before drawing the mesh, though not necessarily in this method.
+		// -----------------------------------------------------------------------------
+		SGroundVertexBuffer GroundVertexBuffer;
+
+		GetIdentityMatrix(GroundVertexBuffer.m_WorldMatrix);
+
+		MulMatrix(m_ViewMatrix, m_ProjectionMatrix, GroundVertexBuffer.m_ViewProjectionMatrix);
+
+		UploadConstantBuffer(&GroundVertexBuffer, m_pGroundVertexConstantBuffer);
+
+		// -----------------------------------------------------------------------------
+		// Draw the mesh. This will activate the shader, constant buffers, and textures
+		// of the material on the GPU and render the mesh to the current render targets.
+		// -----------------------------------------------------------------------------
+
+		DrawMesh(m_pGroundMesh);
+	}
+
+
 	return true;
 }
 
 bool CApplication::InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _IsAltDown)
 {
-	// Movement of the camera
-	// Key 37 is left arrow
+	// Movement of the camera position
+	if(_Key == 'W' && _IsKeyDown)
+	{
+		m_radius -= m_interval * 2;
+		std::cout << "Move camera forward" << std::endl;
+	}
 	if((_Key == 'A' || _Key == 37) && _IsKeyDown)
 	{
 		m_alpha += m_interval;
-		std::cout << "Turn left" << std::endl;
+		std::cout << "Move camera left" << std::endl;
 	}
-	// Key 39 is right arrow
+	if(_Key == 'S' && _IsKeyDown)
+	{
+		m_radius += m_interval * 2;
+		std::cout << "Move camera backward" << std::endl;
+	}
 	if((_Key == 'D' || _Key == 39) && _IsKeyDown)
 	{
 		m_alpha -= m_interval;
-		std::cout << "Turn right" << std::endl;
+		std::cout << "Move camera right" << std::endl;
+	}
+	if(_Key == 38 && _IsKeyDown)
+	{
+		m_camPosY -= m_interval * 2;
+		std::cout << "Move camera up" << std::endl;
+	}
+	if(_Key == 40 && _IsKeyDown)
+	{
+		m_camPosY += m_interval * 2;
+		std::cout << "Move camera down" << std::endl;
 	}
 
 	// Toggle automatic rotation of camera with spacebar
-	if((_Key == 32) && _IsKeyDown)
+	if(_Key == 32 && _IsKeyDown)
 	{
 		m_autoRotation = !m_autoRotation;
 		std::cout << "Toggle automatic rotation" << std::endl;
 	}
+
+	// Toggle drawing of ground
+	if(_Key == 'G' && _IsKeyDown)
+	{
+		m_showGround = !m_showGround;
+		std::cout << "Toggle drawing of ground" << std::endl;
+	}
+
 
 	return true;
 }
