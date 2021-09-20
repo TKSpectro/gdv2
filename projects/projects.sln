@@ -3,36 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30709.132
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example", "example\example.vcxproj", "{2226DB5F-4E89-48C0-8A1F-6F90641D0437}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uebung2", "uebung2\uebung2.vcxproj", "{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mandelbrot", "mandelbrot\mandelbrot.vcxproj", "{23D64273-1849-4F06-85DF-3B4620BB764F}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ssao", "ssao\ssao.vcxproj", "{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shaders", "shaders", "{9D4498B2-5EC3-4EDE-A432-ACBC48449BF0}"
 	ProjectSection(SolutionItems) = preProject
 		..\data\shader\billboard.hlsl = ..\data\shader\billboard.hlsl
-		..\data\shader\bump_mapping.fx = ..\data\shader\bump_mapping.fx
-		..\data\shader\colored.fx = ..\data\shader\colored.fx
-		..\data\shader\mandelbrot.hlsl = ..\data\shader\mandelbrot.hlsl
-		..\data\shader\phong.hlsl = ..\data\shader\phong.hlsl
-		..\data\shader\post_effect.fx = ..\data\shader\post_effect.fx
-		..\data\shader\simple.fx = ..\data\shader\simple.fx
-		..\data\shader\simple2.fx = ..\data\shader\simple2.fx
-		..\data\shader\ssao.fx = ..\data\shader\ssao.fx
 		..\data\shader\textured.fx = ..\data\shader\textured.fx
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "images", "images", "{52CA5D6D-DE95-4EA8-86B6-F6A0667A0BAB}"
 	ProjectSection(SolutionItems) = preProject
-		..\data\images\cube.dds = ..\data\images\cube.dds
-		..\data\images\earth.dds = ..\data\images\earth.dds
 		..\data\images\leaf.dds = ..\data\images\leaf.dds
-		..\data\images\moon.dds = ..\data\images\moon.dds
-		..\data\images\sky.dds = ..\data\images\sky.dds
-		..\data\images\sphere.dds = ..\data\images\sphere.dds
 		..\data\images\wall.dds = ..\data\images\wall.dds
 		..\data\images\wall_color_map.dds = ..\data\images\wall_color_map.dds
 		..\data\images\wall_normal_map.dds = ..\data\images\wall_normal_map.dds
@@ -48,30 +27,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2226DB5F-4E89-48C0-8A1F-6F90641D0437}.Debug|Win32.ActiveCfg = Debug|Win32
-		{2226DB5F-4E89-48C0-8A1F-6F90641D0437}.Debug|Win32.Build.0 = Debug|Win32
-		{2226DB5F-4E89-48C0-8A1F-6F90641D0437}.Debug|x64.ActiveCfg = Debug|Win32
-		{2226DB5F-4E89-48C0-8A1F-6F90641D0437}.Release|Win32.ActiveCfg = Release|Win32
-		{2226DB5F-4E89-48C0-8A1F-6F90641D0437}.Release|Win32.Build.0 = Release|Win32
-		{2226DB5F-4E89-48C0-8A1F-6F90641D0437}.Release|x64.ActiveCfg = Release|Win32
-		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Debug|Win32.ActiveCfg = Debug|Win32
-		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Debug|Win32.Build.0 = Debug|Win32
-		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Debug|x64.ActiveCfg = Debug|Win32
-		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Release|Win32.ActiveCfg = Release|Win32
-		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Release|Win32.Build.0 = Release|Win32
-		{DDA9C1EF-93A9-45E3-A489-D981892AFF8F}.Release|x64.ActiveCfg = Release|Win32
-		{23D64273-1849-4F06-85DF-3B4620BB764F}.Debug|Win32.ActiveCfg = Debug|Win32
-		{23D64273-1849-4F06-85DF-3B4620BB764F}.Debug|Win32.Build.0 = Debug|Win32
-		{23D64273-1849-4F06-85DF-3B4620BB764F}.Debug|x64.ActiveCfg = Debug|Win32
-		{23D64273-1849-4F06-85DF-3B4620BB764F}.Release|Win32.ActiveCfg = Release|Win32
-		{23D64273-1849-4F06-85DF-3B4620BB764F}.Release|Win32.Build.0 = Release|Win32
-		{23D64273-1849-4F06-85DF-3B4620BB764F}.Release|x64.ActiveCfg = Release|Win32
-		{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}.Debug|Win32.ActiveCfg = Debug|Win32
-		{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}.Debug|Win32.Build.0 = Debug|Win32
-		{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}.Debug|x64.ActiveCfg = Debug|Win32
-		{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}.Release|Win32.ActiveCfg = Release|Win32
-		{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}.Release|Win32.Build.0 = Release|Win32
-		{CD468F82-2A1D-49C2-9F0D-342EDDBE41DC}.Release|x64.ActiveCfg = Release|Win32
 		{CE8D7252-26C5-47F1-A896-06CA768A0E40}.Debug|Win32.ActiveCfg = Debug|Win32
 		{CE8D7252-26C5-47F1-A896-06CA768A0E40}.Debug|Win32.Build.0 = Debug|Win32
 		{CE8D7252-26C5-47F1-A896-06CA768A0E40}.Debug|x64.ActiveCfg = Debug|Win32

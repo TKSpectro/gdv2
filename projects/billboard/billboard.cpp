@@ -571,7 +571,7 @@ bool CApplication::InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _Is
 	if((_Key == 'A' || _Key == 37) && _IsKeyDown)
 	{
 		m_alpha += m_interval;
-		std::cout << "Move camera left" << std::endl;
+		std::cout << "Move camera right" << std::endl;
 	}
 	if(_Key == 'S' && _IsKeyDown)
 	{
@@ -581,17 +581,17 @@ bool CApplication::InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _Is
 	if((_Key == 'D' || _Key == 39) && _IsKeyDown)
 	{
 		m_alpha -= m_interval;
-		std::cout << "Move camera right" << std::endl;
+		std::cout << "Move camera left" << std::endl;
 	}
 	if(_Key == 40 && _IsKeyDown)
 	{
 		m_camPosY -= m_interval * 2;
-		std::cout << "Move camera up" << std::endl;
+		std::cout << "Move camera down" << std::endl;
 	}
 	if(_Key == 38 && _IsKeyDown)
 	{
 		m_camPosY += m_interval * 2;
-		std::cout << "Move camera down" << std::endl;
+		std::cout << "Move camera up" << std::endl;
 	}
 
 	// Toggle automatic rotation of camera with spacebar
