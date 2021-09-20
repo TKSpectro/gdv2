@@ -491,8 +491,8 @@ bool CApplication::InternOnFrame()
 	// to be done before drawing the mesh, though not necessarily in this method.
 	// -----------------------------------------------------------------------------
 	SVertexBuffer VertexBuffer;
-	float rotationMatrix[16];
-	float translationMatrix[16];
+	float RotationMatrix[16];
+	float TranslationMatrix[16];
 
 	// Set world matrix in the vertex buffer for this frame
 	GetIdentityMatrix(VertexBuffer.m_WorldMatrix);
@@ -501,15 +501,12 @@ bool CApplication::InternOnFrame()
 	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
 
 	// Rotation of the camera around the center point 0,0,0 with the offset of m_alpha 
-	// which can be changed by either pressing a or d or enabling autoRotate
+	// which can be changed by either pressing a or d or enabling automatic rotation
 	float x = m_radius * cos(m_theta);
 	float y = 0;
 	float z = m_radius * sin(m_theta);
-	float deltaX = z * cos(m_alpha) - x * sin(m_alpha);
-	float deltaZ = x * cos(m_alpha) + z * sin(m_alpha);
-
-	m_camPosX = deltaX;
-	m_camPosZ = deltaZ;
+	m_camPosX = z * cos(m_alpha) - x * sin(m_alpha);
+	m_camPosZ = x * cos(m_alpha) + z * sin(m_alpha);
 
 	// Automatic rotation
 	if(m_autoRotation)
@@ -608,12 +605,12 @@ bool CApplication::InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _Is
 		m_alpha -= m_interval;
 		std::cout << "Move camera right" << std::endl;
 	}
-	if(_Key == 38 && _IsKeyDown)
+	if(_Key == 40 && _IsKeyDown)
 	{
 		m_camPosY -= m_interval * 2;
 		std::cout << "Move camera up" << std::endl;
 	}
-	if(_Key == 40 && _IsKeyDown)
+	if(_Key == 38 && _IsKeyDown)
 	{
 		m_camPosY += m_interval * 2;
 		std::cout << "Move camera down" << std::endl;
