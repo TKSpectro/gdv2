@@ -140,8 +140,8 @@ CApplication::CApplication()
 	, m_pGroundMesh(nullptr)
 	, m_pGroundMaterial(nullptr)
 	, m_camPosX(0.0f)
-	, m_camPosY(1.0f)
-	, m_camPosZ(-4.0f)
+	, m_camPosY(1.2f)
+	, m_camPosZ(-5.0f)
 	, m_camAtX(0.0f)
 	, m_camAtY(0.0f)
 	, m_camAtZ(0.0f)
@@ -509,6 +509,8 @@ bool CApplication::InternOnUpdate()
 	Eye[1] = m_camPosY; At[1] = m_camAtZ; Up[1] = 1.0f;
 	Eye[2] = m_camPosZ; At[2] = m_camAtY; Up[2] = 0.0f;
 
+	std::cout << m_camPosX << ' ' << m_camPosY << ' ' << m_camPosZ << std::endl;
+
 	GetViewMatrix(Eye, At, Up, m_ViewMatrix);
 
 	return true;
@@ -598,12 +600,6 @@ bool CApplication::InternOnFrame()
 		m_alpha += m_interval;
 	}
 
-	float pos[3] = {0.0f, 0.0f, 0.0f};
-	Draw(m_pMeshTree, pos);
-
-	float pos2[3] = {1.0f, 0.0f, 1.0f};
-	Draw(m_pMeshWall, pos2);
-
 
 	if(m_showGround)
 	{
@@ -626,6 +622,26 @@ bool CApplication::InternOnFrame()
 
 		DrawMesh(m_pGroundMesh);
 	}
+
+	float pos0[3] = {-4.0f, 0.0f, 2.0f};
+	Draw(m_pMeshWall, pos0);
+	float pos1[3] = {-2.0f, 0.0f, 2.0f};
+	Draw(m_pMeshWall, pos1);
+	float pos2[3] = {0.0f, 0.0f, 2.0f};
+	Draw(m_pMeshWall, pos2);
+	float pos3[3] = {2.0f, 0.0f, 2.0f};
+	Draw(m_pMeshWall, pos3);
+	float pos4[3] = {4.0f, 0.0f, 2.0f};
+	Draw(m_pMeshWall, pos4);
+
+	float pos5[3] = {-2.0f, 0.0f, 0.0f};
+	Draw(m_pMeshTree, pos5);
+	float pos6[3] = {2.0f, 0.0f, -0.25f};
+	Draw(m_pMeshTree, pos6);
+	float pos7[3] = {1.0f, 0.0f, -1.5f};
+	Draw(m_pMeshTree, pos7);
+
+
 
 
 	return true;
