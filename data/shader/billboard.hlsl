@@ -5,9 +5,9 @@
 cbuffer VSBuffer : register(b0) // Register the constant buffer on slot 0
 {
     float4x4 g_ViewProjectionMatrix;
-    float4x4 g_WorldMatrix;
     float3 g_WSCameraPosition;
     float3 g_WSLightPosition;
+    float3 g_WSBillboardPosition;
 };
 
 cbuffer PSBuffer : register(b0) // Register the constant buffer in the pixel constant buffer state on slot 0
@@ -66,7 +66,7 @@ PSInput VSShader(VSInput _Input)
     yBaseVector = normalize(yBaseVector);
     
     // the zBaseVector describes the negative direction of where the camera is looking
-    float3 zBaseVector = -g_WSCameraPosition;
+    float3 zBaseVector = g_WSBillboardPosition - g_WSCameraPosition;
     zBaseVector.y = 0.0f;
     zBaseVector = normalize(zBaseVector);
     
@@ -86,20 +86,19 @@ PSInput VSShader(VSInput _Input)
 	// -------------------------------------------------------------------------------
 	// Get the world space position.
 	// -------------------------------------------------------------------------------
-    float3 transformVector = mul(_Input.m_OSPosition, rotationMatrix);
-    float4 WSPosition = mul(float4(transformVector, 1.0f), g_WorldMatrix);
+    float3 WSPosition = g_WSBillboardPosition + mul(_Input.m_OSPosition, rotationMatrix);
 
 	// -------------------------------------------------------------------------------
 	// Get the clip space position.
 	// -------------------------------------------------------------------------------
-    Output.m_CSPosition = mul(WSPosition, g_ViewProjectionMatrix);
+    Output.m_CSPosition = mul(float4(WSPosition, 1.0f), g_ViewProjectionMatrix);
     
     // -------------------------------------------------------------------------------
 	// Get world space values from the object space positions.
 	// -------------------------------------------------------------------------------
-    Output.m_WSTangent = normalize(mul(_Input.m_OSTangent, (float3x3) g_WorldMatrix));
-    Output.m_WSBinormal = normalize(mul(_Input.m_OSBinormal, (float3x3) g_WorldMatrix));
-    Output.m_WSNormal = normalize(mul(_Input.m_OSNormal, (float3x3) g_WorldMatrix));
+    Output.m_WSTangent = normalize(mul(_Input.m_OSTangent, rotationMatrix));
+    Output.m_WSBinormal = normalize(mul(_Input.m_OSBinormal, rotationMatrix));
+    Output.m_WSNormal = normalize(mul(_Input.m_OSNormal, rotationMatrix));
     
     // -------------------------------------------------------------------------------
 	// Get camera and light directions in WS by subtrating their positions by the

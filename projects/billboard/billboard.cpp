@@ -10,11 +10,12 @@ using namespace gfx;
 struct SVertexBuffer
 {
 	float m_ViewProjectionMatrix[16];
-	float m_WorldMatrix[16];
 	float m_WSCameraPosition[3];
 	float m_FILLER1;
 	float m_WSLightPosition[3];
 	float m_FILLER2;
+	float m_WSBillboardPosition[3];
+	float m_FILLER3;
 };
 
 // Pixel Buffer for the billboard shader
@@ -55,11 +56,17 @@ private:
 	BHandle m_pVertexShader;            // A pointer to a YoshiX vertex shader, which processes each single vertex of the mesh.
 	BHandle m_pPixelShader;             // A pointer to a YoshiX pixel shader, which computes the color of each pixel visible of the mesh on the screen.
 
-	BHandle m_pMaterial;                // A pointer to a YoshiX material, spawning the surface of the mesh.
-	BHandle m_pMesh;                    // A pointer to a YoshiX mesh, which represents a single triangle.
+	BHandle m_pMaterialTree;                // A pointer to a YoshiX material, spawning the surface of the mesh.
+	BHandle m_pMeshTree;                    // A pointer to a YoshiX mesh, which represents a single triangle.
 
-	BHandle m_pColorTexture;			// A pointer to a texture which contains a actual picture to display.
-	BHandle m_pNormalTexture;			// A pointer to a texture which contains the normal for the the previous picture.
+	BHandle m_pMaterialWall;                // A pointer to a YoshiX material, spawning the surface of the mesh.
+	BHandle m_pMeshWall;                    // A pointer to a YoshiX mesh, which represents a single triangle.
+
+	BHandle m_pColorTextureTree;			// A pointer to a texture which contains a tree picture to display.
+	BHandle m_pNormalTextureTree;			// A pointer to a texture which contains the normal for the the previous picture.
+
+	BHandle m_pColorTextureWall;			// A pointer to a texture which contains a wall picture to display.
+	BHandle m_pNormalTextureWall;			// A pointer to a texture which contains the normal for the the previous picture.
 
 	// Ground
 	BHandle m_pGroundVertexConstantBuffer;
@@ -107,20 +114,25 @@ private:
 	virtual bool InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _IsAltDown);
 	virtual bool InternOnUpdate();
 	virtual bool InternOnFrame();
+	virtual bool Draw(BHandle material, float pos[3]);
 };
 
 // -----------------------------------------------------------------------------
 
 CApplication::CApplication()
 	: m_FieldOfViewY(60.0f)        // Set the vertical view angle of the camera to 60 degrees.
-	, m_pMesh(nullptr)
+	, m_pMeshTree(nullptr)
+	, m_pMeshWall(nullptr)
 	, m_pVertexConstantBuffer(nullptr)
 	, m_pPixelConstantBuffer(nullptr)
 	, m_pVertexShader(nullptr)
 	, m_pPixelShader(nullptr)
-	, m_pMaterial(nullptr)
-	, m_pColorTexture(nullptr)
-	, m_pNormalTexture(nullptr)
+	, m_pMaterialTree(nullptr)
+	, m_pMaterialWall(nullptr)
+	, m_pColorTextureTree(nullptr)
+	, m_pNormalTextureTree(nullptr)
+	, m_pColorTextureWall(nullptr)
+	, m_pNormalTextureWall(nullptr)
 	, m_pGroundVertexConstantBuffer(nullptr)
 	, m_pGroundVertexShader(nullptr)
 	, m_pGroundPixelShader(nullptr)
@@ -225,35 +237,69 @@ bool CApplication::InternOnCreateMaterials()
 	// Create a material spawning the mesh. This material will be used for the
 	// actual billboard.
 	// -----------------------------------------------------------------------------
-	SMaterialInfo MaterialInfo;
+	SMaterialInfo MaterialInfoTree;
 
-	MaterialInfo.m_NumberOfTextures = 3;									// The material does not need textures, because the pixel shader just returns a constant color.
-	MaterialInfo.m_pTextures[0] = m_pColorTexture;							// The handle to the texture.
-	MaterialInfo.m_pTextures[1] = m_pNormalTexture;
-	MaterialInfo.m_pTextures[2] = m_pGroundTexture;
+	MaterialInfoTree.m_NumberOfTextures = 3;									// The material does not need textures, because the pixel shader just returns a constant color.
+	MaterialInfoTree.m_pTextures[0] = m_pColorTextureTree;							// The handle to the texture.
+	MaterialInfoTree.m_pTextures[1] = m_pNormalTextureTree;
+	MaterialInfoTree.m_pTextures[2] = m_pGroundTexture;
 
-	MaterialInfo.m_NumberOfVertexConstantBuffers = 1;						// We need one vertex constant buffer to pass world matrix and view projection matrix to the vertex shader.
-	MaterialInfo.m_pVertexConstantBuffers[0] = m_pVertexConstantBuffer;     // Pass the handle to the created vertex constant buffer.
+	MaterialInfoTree.m_NumberOfVertexConstantBuffers = 1;						// We need one vertex constant buffer to pass world matrix and view projection matrix to the vertex shader.
+	MaterialInfoTree.m_pVertexConstantBuffers[0] = m_pVertexConstantBuffer;     // Pass the handle to the created vertex constant buffer.
 
-	MaterialInfo.m_NumberOfPixelConstantBuffers = 1;						// We do not need any global data in the pixel shader.
-	MaterialInfo.m_pPixelConstantBuffers[0] = m_pPixelConstantBuffer;
+	MaterialInfoTree.m_NumberOfPixelConstantBuffers = 1;						// We do not need any global data in the pixel shader.
+	MaterialInfoTree.m_pPixelConstantBuffers[0] = m_pPixelConstantBuffer;
 
-	MaterialInfo.m_pVertexShader = m_pVertexShader;							// The handle to the vertex shader.
-	MaterialInfo.m_pPixelShader = m_pPixelShader;							// The handle to the pixel shader.
+	MaterialInfoTree.m_pVertexShader = m_pVertexShader;							// The handle to the vertex shader.
+	MaterialInfoTree.m_pPixelShader = m_pPixelShader;							// The handle to the pixel shader.
 
-	MaterialInfo.m_NumberOfInputElements = 5;								// The vertex shader requests the position as only argument.
-	MaterialInfo.m_InputElements[0].m_pName = "POSITION";					// The semantic name of the argument, which matches exactly the identifier in the 'VSInput' struct.
-	MaterialInfo.m_InputElements[0].m_Type = SInputElement::Float3;			// The position is a 3D vector with floating points.
-	MaterialInfo.m_InputElements[1].m_pName = "TANGENT";
-	MaterialInfo.m_InputElements[1].m_Type = SInputElement::Float3;
-	MaterialInfo.m_InputElements[2].m_pName = "BINORMAL";
-	MaterialInfo.m_InputElements[2].m_Type = SInputElement::Float3;
-	MaterialInfo.m_InputElements[3].m_pName = "NORMAL";
-	MaterialInfo.m_InputElements[3].m_Type = SInputElement::Float3;
-	MaterialInfo.m_InputElements[4].m_pName = "TEXCOORD";              // The semantic name of the second argument, which matches exactly the second identifier in the 'VSInput' struct.
-	MaterialInfo.m_InputElements[4].m_Type = SInputElement::Float2;   // The texture coordinates are a 2D vector with floating points.
+	MaterialInfoTree.m_NumberOfInputElements = 5;								// The vertex shader requests the position as only argument.
+	MaterialInfoTree.m_InputElements[0].m_pName = "POSITION";					// The semantic name of the argument, which matches exactly the identifier in the 'VSInput' struct.
+	MaterialInfoTree.m_InputElements[0].m_Type = SInputElement::Float3;			// The position is a 3D vector with floating points.
+	MaterialInfoTree.m_InputElements[1].m_pName = "TANGENT";
+	MaterialInfoTree.m_InputElements[1].m_Type = SInputElement::Float3;
+	MaterialInfoTree.m_InputElements[2].m_pName = "BINORMAL";
+	MaterialInfoTree.m_InputElements[2].m_Type = SInputElement::Float3;
+	MaterialInfoTree.m_InputElements[3].m_pName = "NORMAL";
+	MaterialInfoTree.m_InputElements[3].m_Type = SInputElement::Float3;
+	MaterialInfoTree.m_InputElements[4].m_pName = "TEXCOORD";              // The semantic name of the second argument, which matches exactly the second identifier in the 'VSInput' struct.
+	MaterialInfoTree.m_InputElements[4].m_Type = SInputElement::Float2;   // The texture coordinates are a 2D vector with floating points.
 
-	CreateMaterial(MaterialInfo, &m_pMaterial);
+	CreateMaterial(MaterialInfoTree, &m_pMaterialTree);
+
+	// -----------------------------------------------------------------------------
+// Create a material spawning the mesh. This material will be used for the
+// actual billboard.
+// -----------------------------------------------------------------------------
+	SMaterialInfo MaterialInfoWall;
+
+	MaterialInfoWall.m_NumberOfTextures = 3;									// The material does not need textures, because the pixel shader just returns a constant color.
+	MaterialInfoWall.m_pTextures[0] = m_pColorTextureWall;							// The handle to the texture.
+	MaterialInfoWall.m_pTextures[1] = m_pNormalTextureWall;
+	MaterialInfoWall.m_pTextures[2] = m_pGroundTexture;
+
+	MaterialInfoWall.m_NumberOfVertexConstantBuffers = 1;						// We need one vertex constant buffer to pass world matrix and view projection matrix to the vertex shader.
+	MaterialInfoWall.m_pVertexConstantBuffers[0] = m_pVertexConstantBuffer;     // Pass the handle to the created vertex constant buffer.
+
+	MaterialInfoWall.m_NumberOfPixelConstantBuffers = 1;						// We do not need any global data in the pixel shader.
+	MaterialInfoWall.m_pPixelConstantBuffers[0] = m_pPixelConstantBuffer;
+
+	MaterialInfoWall.m_pVertexShader = m_pVertexShader;							// The handle to the vertex shader.
+	MaterialInfoWall.m_pPixelShader = m_pPixelShader;							// The handle to the pixel shader.
+
+	MaterialInfoWall.m_NumberOfInputElements = 5;								// The vertex shader requests the position as only argument.
+	MaterialInfoWall.m_InputElements[0].m_pName = "POSITION";					// The semantic name of the argument, which matches exactly the identifier in the 'VSInput' struct.
+	MaterialInfoWall.m_InputElements[0].m_Type = SInputElement::Float3;			// The position is a 3D vector with floating points.
+	MaterialInfoWall.m_InputElements[1].m_pName = "TANGENT";
+	MaterialInfoWall.m_InputElements[1].m_Type = SInputElement::Float3;
+	MaterialInfoWall.m_InputElements[2].m_pName = "BINORMAL";
+	MaterialInfoWall.m_InputElements[2].m_Type = SInputElement::Float3;
+	MaterialInfoWall.m_InputElements[3].m_pName = "NORMAL";
+	MaterialInfoWall.m_InputElements[3].m_Type = SInputElement::Float3;
+	MaterialInfoWall.m_InputElements[4].m_pName = "TEXCOORD";              // The semantic name of the second argument, which matches exactly the second identifier in the 'VSInput' struct.
+	MaterialInfoWall.m_InputElements[4].m_Type = SInputElement::Float2;   // The texture coordinates are a 2D vector with floating points.
+
+	CreateMaterial(MaterialInfoWall, &m_pMaterialWall);
 
 	// -----------------------------------------------------------------------------
 	// Create a material spawning the mesh. This material will be used for the
@@ -289,7 +335,8 @@ bool CApplication::InternOnReleaseMaterials()
 	// -----------------------------------------------------------------------------
 	// Important to release the material again when the application is shut down.
 	// -----------------------------------------------------------------------------
-	ReleaseMaterial(m_pMaterial);
+	ReleaseMaterial(m_pMaterialTree);
+	ReleaseMaterial(m_pMaterialWall);
 	ReleaseMaterial(m_pGroundMaterial);
 
 	return true;
@@ -299,16 +346,11 @@ bool CApplication::InternOnReleaseMaterials()
 
 bool CApplication::InternOnCreateTextures()
 {
-	if(m_useTree)
-	{
-		CreateTexture("..\\data\\images\\tree_color_map.dds", &m_pColorTexture);
-		CreateTexture("..\\data\\images\\tree_normal_map.png", &m_pNormalTexture);
-	}
-	else
-	{
-		CreateTexture("..\\data\\images\\wall_color_map.dds", &m_pColorTexture);
-		CreateTexture("..\\data\\images\\wall_normal_map.dds", &m_pNormalTexture);
-	}
+	CreateTexture("..\\data\\images\\tree_color_map.dds", &m_pColorTextureTree);
+	CreateTexture("..\\data\\images\\tree_normal_map.png", &m_pNormalTextureTree);
+
+	CreateTexture("..\\data\\images\\wall_color_map.dds", &m_pColorTextureWall);
+	CreateTexture("..\\data\\images\\wall_normal_map.dds", &m_pNormalTextureWall);
 
 	CreateTexture("..\\data\\images\\ground.dds", &m_pGroundTexture);
 
@@ -319,8 +361,11 @@ bool CApplication::InternOnCreateTextures()
 
 bool CApplication::InternOnReleaseTextures()
 {
-	ReleaseTexture(m_pColorTexture);
-	ReleaseTexture(m_pNormalTexture);
+	ReleaseTexture(m_pColorTextureTree);
+	ReleaseTexture(m_pNormalTextureTree);
+
+	ReleaseTexture(m_pColorTextureWall);
+	ReleaseTexture(m_pNormalTextureWall);
 
 	ReleaseTexture(m_pGroundTexture);
 
@@ -365,15 +410,25 @@ bool CApplication::InternOnCreateMeshes()
 	// surface covering the mesh. Note that you pass the number of indices and not
 	// the number of triangles.
 	// -----------------------------------------------------------------------------
-	SMeshInfo MeshInfo;
+	SMeshInfo MeshInfoTree;
 
-	MeshInfo.m_pVertices = &SquareVertices[0][0];      // Pointer to the first float of the first vertex.
-	MeshInfo.m_NumberOfVertices = 4;                            // The number of vertices.
-	MeshInfo.m_pIndices = &SquareIndices[0][0];       // Pointer to the first index.
-	MeshInfo.m_NumberOfIndices = 6;                            // The number of indices (has to be dividable by 3).
-	MeshInfo.m_pMaterial = m_pMaterial;                  // A handle to the material covering the mesh.
+	MeshInfoTree.m_pVertices = &SquareVertices[0][0];      // Pointer to the first float of the first vertex.
+	MeshInfoTree.m_NumberOfVertices = 4;                            // The number of vertices.
+	MeshInfoTree.m_pIndices = &SquareIndices[0][0];       // Pointer to the first index.
+	MeshInfoTree.m_NumberOfIndices = 6;                            // The number of indices (has to be dividable by 3).
+	MeshInfoTree.m_pMaterial = m_pMaterialTree;                  // A handle to the material covering the mesh.
 
-	CreateMesh(MeshInfo, &m_pMesh);
+	CreateMesh(MeshInfoTree, &m_pMeshTree);
+
+	SMeshInfo MeshInfoWall;
+
+	MeshInfoWall.m_pVertices = &SquareVertices[0][0];      // Pointer to the first float of the first vertex.
+	MeshInfoWall.m_NumberOfVertices = 4;                            // The number of vertices.
+	MeshInfoWall.m_pIndices = &SquareIndices[0][0];       // Pointer to the first index.
+	MeshInfoWall.m_NumberOfIndices = 6;                            // The number of indices (has to be dividable by 3).
+	MeshInfoWall.m_pMaterial = m_pMaterialWall;                  // A handle to the material covering the mesh.
+
+	CreateMesh(MeshInfoWall, &m_pMeshWall);
 
 	// -----------------------------------------------------------------------------
 	// Build up the mesh for a simple ground with a texture laying on it.
@@ -412,7 +467,8 @@ bool CApplication::InternOnReleaseMeshes()
 	// -----------------------------------------------------------------------------
 	// Important to release the mesh again when the application is shut down.
 	// -----------------------------------------------------------------------------
-	ReleaseMesh(m_pMesh);
+	ReleaseMesh(m_pMeshTree);
+	ReleaseMesh(m_pMeshWall);
 	ReleaseMesh(m_pGroundMesh);
 
 	return true;
@@ -460,10 +516,8 @@ bool CApplication::InternOnUpdate()
 
 // -----------------------------------------------------------------------------
 
-bool CApplication::InternOnFrame()
+bool CApplication::Draw(BHandle material, float pos[3])
 {
-	SetAlphaBlending(true);
-
 	// -----------------------------------------------------------------------------
 	// Upload the world matrix and the view projection matrix to the GPU. This has
 	// to be done before drawing the mesh, though not necessarily in this method.
@@ -472,25 +526,15 @@ bool CApplication::InternOnFrame()
 	float RotationMatrix[16];
 	float TranslationMatrix[16];
 
-	// Set world matrix in the vertex buffer for this frame
-	GetIdentityMatrix(VertexBuffer.m_WorldMatrix);
+	// Set the current billboard position
+	VertexBuffer.m_WSBillboardPosition[0] = pos[0];
+	VertexBuffer.m_WSBillboardPosition[1] = pos[1];
+	VertexBuffer.m_WSBillboardPosition[2] = pos[2];
 
 	// Set the ViewProjectionMatrix in the vertex buffer for this frame
 	MulMatrix(m_ViewMatrix, m_ProjectionMatrix, VertexBuffer.m_ViewProjectionMatrix);
 
-	// Rotation of the camera around the center point 0,0,0 with the offset of m_alpha 
-	// which can be changed by either pressing a or d or enabling automatic rotation
-	float x = m_radius * cos(m_theta);
-	float y = 0;
-	float z = m_radius * sin(m_theta);
-	m_camPosX = z * cos(m_alpha) - x * sin(m_alpha);
-	m_camPosZ = x * cos(m_alpha) + z * sin(m_alpha);
 
-	// Automatic rotation
-	if(m_autoRotation)
-	{
-		m_alpha += m_interval;
-	}
 
 	// Setting the cameraPos in the vertex buffer to the actual camera position (y should always be 0)
 	VertexBuffer.m_WSCameraPosition[0] = m_camPosX;
@@ -531,7 +575,34 @@ bool CApplication::InternOnFrame()
 	// Draw the mesh. This will activate the shader, constant buffers, and textures
 	// of the material on the GPU and render the mesh to the current render targets.
 	// -----------------------------------------------------------------------------
-	DrawMesh(m_pMesh);
+	DrawMesh(material);
+
+	return true;
+}
+
+bool CApplication::InternOnFrame()
+{
+	SetAlphaBlending(true);
+
+	// Rotation of the camera around the center point 0,0,0 with the offset of m_alpha 
+	// which can be changed by either pressing a or d or enabling automatic rotation
+	float x = m_radius * cos(m_theta);
+	float y = 0;
+	float z = m_radius * sin(m_theta);
+	m_camPosX = z * cos(m_alpha) - x * sin(m_alpha);
+	m_camPosZ = x * cos(m_alpha) + z * sin(m_alpha);
+
+	// Automatic rotation
+	if(m_autoRotation)
+	{
+		m_alpha += m_interval;
+	}
+
+	float pos[3] = {0.0f, 0.0f, 0.0f};
+	Draw(m_pMeshTree, pos);
+
+	float pos2[3] = {1.0f, 0.0f, 1.0f};
+	Draw(m_pMeshWall, pos2);
 
 
 	if(m_showGround)
