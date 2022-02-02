@@ -15,8 +15,4 @@ Billboard(Imposter) Shader + Normal(Bump) Mapping
 
 - Toggle Ground: G
 - Toggle Automatic rotation: Spacebar
-
-## Other Configuration
-
-- You can toggle from the wall texture to a tree texture by setting useTree()
-in billboard.cpp - line 141 (CApplication init method) to true.
+- 

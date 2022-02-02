@@ -147,7 +147,7 @@ CApplication::CApplication()
 	, m_camAtZ(0.0f)
 	, m_autoRotation(false)
 	, m_radius(4)
-	, m_interval(0.025)
+	, m_interval(0.02)
 	, m_theta(5)
 	, m_alpha(90)
 	, m_useTree(false) 		// You can toggle useTree here to get the tree texture instead of the wall
@@ -623,6 +623,7 @@ bool CApplication::InternOnFrame()
 		DrawMesh(m_pGroundMesh);
 	}
 
+	// Draw some objects at different positions
 	float pos0[3] = {-4.0f, 0.0f, 2.0f};
 	Draw(m_pMeshWall, pos0);
 	float pos1[3] = {-2.0f, 0.0f, 2.0f};
@@ -641,11 +642,11 @@ bool CApplication::InternOnFrame()
 	float pos7[3] = {1.0f, 0.0f, -1.5f};
 	Draw(m_pMeshTree, pos7);
 
-
-
-
 	return true;
 }
+
+
+// -----------------------------------------------------------------------------
 
 bool CApplication::InternOnKeyEvent(unsigned int _Key, bool _IsKeyDown, bool _IsAltDown)
 {
